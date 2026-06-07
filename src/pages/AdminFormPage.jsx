@@ -27,9 +27,9 @@ export default function AdminFormPage() {
   const onSubmit = (e) => {
     e.preventDefault();
     // TODO(BE): 등록/수정 저장 (entity·isEdit 분기). 폼 값 수집 후 호출:
-    //   · 유저  : 등록 POST /user {email,pass,name} / 수정 PATCH /user {userId,pass,name}
-    //   · 산(mtn): 등록 POST /mtn / 수정 PUT /mtn/{id}  (Mtn + 이미지 multipart)
-    //   · 경로(track): 등록 POST /track / 수정 PUT /track  (Track JSON + gpxFilePath, GPX 업로드)
+    //   · 유저  : 등록 POST /api/user {email,pass,name} / 수정 PATCH /api/user {userId,pass,name}
+    //   · 산(mtn): 등록 POST /api/mtn / 수정 PUT /api/mtn/{id}  (Mtn + 이미지 multipart)
+    //   · 경로(track): 등록 POST /api/track / 수정 PUT /api/track  (Track JSON + gpxFilePath, GPX 업로드)
     //   성공 시 목록(m.list)으로 이동, 실패 시 에러 표시.
     navigate(m.list); // 디자인 전용: 저장 없이 목록으로
   };

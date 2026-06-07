@@ -1,5 +1,5 @@
 // 디자인용 더미 산 데이터. 실제 데이터/API 연동은 추후 수동으로.
-// TODO(BE): GET /mtn/list (산), GET /track (경로) 응답으로 교체.
+// TODO(BE): GET /api/mtn/list (산), GET /api/track (경로) 응답으로 교체.
 //   BE Mtn{ id, name, location, height, description } / Track{ id, mountainId, name, gpxFilePath, recommendCnt }
 //   ↔ 아래 FE 필드(region/dist/time/lv/pal) 매핑 함수 필요(거리/난이도는 track 기준일 수 있음).
 // lvN: 1 초급 / 2 중급 / 3 상급 · pal: MountainScene 팔레트

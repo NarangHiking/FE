@@ -4,22 +4,14 @@ import MountainCard from '../components/MountainCard.jsx';
 import { MOUNTAINS } from '../data/mountains.js';
 import { FREE_POSTS } from '../data/posts.js';
 
-const TABS = ['저장한 산', '내가 쓴 글', '등반 기록'];
-
-const RECORDS = [
-  { d: '24', m: '05월', name: '북한산 백운대 코스', meta: '5.2km · 3h 12m · ★★★★★' },
-  { d: '10', m: '05월', name: '관악산 사당 능선', meta: '4.1km · 2h 40m · ★★★★☆' },
-  { d: '27', m: '04월', name: '도봉산 신선대', meta: '6.8km · 4h 05m · ★★★★★' },
-  { d: '13', m: '04월', name: '청계산 매봉', meta: '5.5km · 2h 58m · ★★★☆☆' },
-];
+const TABS = ['저장한 산', '내가 쓴 글'];
 
 export default function MyPage() {
   const [tab, setTab] = useState('저장한 산');
-  // TODO(BE): 내 정보 — GET /user (프로필: email, name, role, createdAt). 비로그인 시 /login 리다이렉트.
-  // TODO(BE): 저장한 산/코스 — GET /favorite/track 로 saved 더미 교체.
-  // TODO(BE): 내가 쓴 글 — GET /board (작성자=내 userId 필터; BE에 userId 필터 없으면 추가 요청).
-  // TODO(BE): 프로필 수정 → PATCH /user { userId, pass, name }, 탈퇴 → PATCH /user/remove.
-  // ⚠ '등반 기록' 탭은 BE에 해당 도메인 없음 → 기록 API 추가 필요.
+  // TODO(BE): 내 정보 — GET /api/user (프로필: email, name, role, createdAt). 비로그인 시 /login 리다이렉트.
+  // TODO(BE): 저장한 산/코스 — GET /api/favorite/track 로 saved 더미 교체.
+  // TODO(BE): 내가 쓴 글 — GET /api/board (작성자=내 userId 필터; BE에 userId 필터 없으면 추가 요청).
+  // TODO(BE): 누른 좋아요 — GET /api/recommend/track. 프로필 수정 → PATCH /api/user { userId, pass, name }, 탈퇴 → PATCH /api/user/remove.
   const saved = MOUNTAINS.slice(0, 4);
   const myPosts = FREE_POSTS.slice(0, 5);
 
@@ -42,9 +34,9 @@ export default function MyPage() {
           </div>
         </div>
         <div className="pstats">
-          <div className="ps"><div className="pv">12</div><div className="pk">등반한 산</div></div>
-          <div className="ps"><div className="pv">23</div><div className="pk">작성글</div></div>
           <div className="ps"><div className="pv">31</div><div className="pk">저장 코스</div></div>
+          <div className="ps"><div className="pv">23</div><div className="pk">작성글</div></div>
+          <div className="ps"><div className="pv">48</div><div className="pk">누른 좋아요</div></div>
         </div>
       </div>
 
@@ -81,22 +73,6 @@ export default function MyPage() {
               <span className="b-num">{p.cm}</span>
               <span className="b-num">{p.views}</span>
             </Link>
-          ))}
-        </div>
-      )}
-
-      {/* 등반 기록 */}
-      {tab === '등반 기록' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 14, marginBottom: 40 }}>
-          {RECORDS.map((r, i) => (
-            <div key={i} className="record-card">
-              <div className="rdate"><div className="d">{r.d}</div><div className="m">{r.m}</div></div>
-              <div className="rbody">
-                <div className="rn">{r.name}</div>
-                <div className="rmeta">{r.meta}</div>
-              </div>
-              <span className="btn sm ghost">기록 보기</span>
-            </div>
           ))}
         </div>
       )}

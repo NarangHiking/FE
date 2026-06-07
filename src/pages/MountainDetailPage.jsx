@@ -21,25 +21,31 @@ const WAYPOINTS = [
   { cls: '', nm: '탐방지원센터 (도착)', info: '5.2km · 고도 180m · 13:10' },
 ];
 
-const SCORE_BARS = [
-  { lab: '경치', pct: 96 },
-  { lab: '접근성', pct: 82 },
-  { lab: '난이도', pct: 64 },
-  { lab: '관리상태', pct: 88 },
-];
+// 후기 카드의 '도움돼요' 좋아요 토글
+function ReviewLike({ count }) {
+  const [on, setOn] = useState(false);
+  // TODO(BE): 후기 좋아요(도움돼요) API 연동(별도 도메인 필요 시 추가)
+  return (
+    <button className={'rev-like' + (on ? ' on' : '')} onClick={() => setOn((v) => !v)}>
+      👍 {count + (on ? 1 : 0)}
+    </button>
+  );
+}
 
 export default function MountainDetailPage() {
   const { id } = useParams();
   const m = getMountain(id);
   const [tab, setTab] = useState(0);
   const [fav, setFav] = useState(false);
+  const [liked, setLiked] = useState(false);
+  const likes = 311 + (liked ? 1 : 0);
 
-  // TODO(BE): 산 상세 — GET /mtn/{id} (이름/위치/고도/설명/이미지)
-  // TODO(BE): 경로(코스) 목록 — GET /mtn/{mtnId}/track → 아래 ROUTES 더미를 교체.
-  //   탭 선택 시 GET /track/{trackId} 로 상세(gpxFilePath, recommendCnt) 로드.
-  // TODO(BE): 저장(찜) 상태 — 진입 시 GET /favorite/{trackId} 로 fav 초기화.
-  //   저장 토글 → POST /favorite/{trackId} / DELETE /favorite/{trackId}.
-  //   '추천(좋아요)' 이 필요하면 GET/POST/DELETE /recommend/{trackId}.
+  // TODO(BE): 산 상세 — GET /api/mtn/{id} (이름/위치/고도/설명/이미지)
+  // TODO(BE): 경로(코스) 목록 — GET /api/mtn/{mtnId}/track → 아래 ROUTES 더미를 교체.
+  //   탭 선택 시 GET /api/track/{trackId} 로 상세(gpxFilePath, recommendCnt) 로드.
+  // TODO(BE): 저장(찜) 상태 — 진입 시 GET /api/favorite/{trackId} 로 fav 초기화.
+  //   저장 토글 → POST /api/favorite/{trackId} / DELETE /api/favorite/{trackId}.
+  //   코스 좋아요는 GET/POST/DELETE /api/recommend/{trackId} (아래 좋아요 섹션).
   // TODO(BE): 별점 리뷰 섹션은 BE 스키마에 없음 → 리뷰 API 추가 또는 board(category) 활용.
 
   const route = ROUTES[tab];
@@ -84,7 +90,7 @@ export default function MountainDetailPage() {
           <div className="act-row">
             {/* TODO(BE): GPX 다운로드 → 현재 선택된 track 의 gpxFilePath 로 연결 */}
             <a className="act pop" href="#route">⬇ GPX 다운로드</a>
-            {/* TODO(BE): 저장 토글 → POST/DELETE /favorite/{trackId} (비로그인 시 로그인 유도) */}
+            {/* TODO(BE): 저장 토글 → POST/DELETE /api/favorite/{trackId} (비로그인 시 로그인 유도) */}
             <button className={'act fav' + (fav ? ' on' : '')} onClick={() => setFav((v) => !v)}>♥ 저장</button>
             <button className="act">🔗 공유</button>
             <button className="act">🚩 신고</button>
@@ -207,33 +213,29 @@ export default function MountainDetailPage() {
         </aside>
       </section>
 
-      {/* ───── 리뷰 ───── */}
+      {/* ───── 좋아요 & 후기 ───── */}
       <section className="reviews">
         <div className="blk-head">
           <span className="num">03</span>
-          <h2>등산 후기</h2>
-          <span className="sub">— 다녀온 사람들의 한 줄</span>
+          <h2>좋아요 & 후기</h2>
+          <span className="sub">— 별점 대신 좋아요로 평가해요</span>
         </div>
 
-        <div className="rev-top">
-          <div className="score-box">
-            <div className="big">4.7</div>
-            <div className="stars">★★★★★</div>
-            <div className="n">리뷰 312개</div>
+        {/* TODO(BE): 코스 좋아요 — 진입 시 GET /api/recommend/{trackId} 로 liked 초기화,
+            토글 시 POST/DELETE /api/recommend/{trackId}. 좋아요 수는 Track.recommendCnt. */}
+        <div className="like-top">
+          <div className="like-box">
+            <button className={'like-btn' + (liked ? ' on' : '')} onClick={() => setLiked((v) => !v)}>♥</button>
+            <div className="like-cnt"><b>{likes.toLocaleString()}</b><span>명이 좋아해요</span></div>
           </div>
-          <div className="bars">
-            {SCORE_BARS.map((b) => (
-              <div className="bar-row" key={b.lab}>
-                <span className="lab">{b.lab}</span>
-                <span className="track"><span className="fill" style={{ width: `${b.pct}%` }} /></span>
-                <span className="pct">{b.pct}%</span>
-              </div>
-            ))}
+          <div className="like-msg">
+            이 코스가 마음에 드셨나요? <b>좋아요</b>를 누르면 마이페이지에 모이고,
+            인기 코스 순위에 반영돼요. 자세한 감상은 아래에 후기로 남겨주세요.
           </div>
         </div>
 
-        {/* TODO(BE): 리뷰 작성/목록은 BE에 전용 API 없음. 리뷰 도메인 추가하거나
-            board(category=REVIEW, trackId 연결)로 대체 후 연동. */}
+        {/* TODO(BE): 후기(텍스트) 작성/목록 — board(category=REVIEW, trackId 연결) 또는
+            댓글 API 활용. POST /api/board (multipart) / GET /api/board?... */}
         <div className="rev-write">
           <div className="av">나</div>
           <input placeholder={`${m.name} 다녀오셨나요? 후기를 남겨주세요`} />
@@ -249,7 +251,7 @@ export default function MountainDetailPage() {
                   <div className="who">{r.who}</div>
                   <div className="when">{r.when}</div>
                 </div>
-                <div className="rstars">{'★'.repeat(r.stars)}{'☆'.repeat(5 - r.stars)}</div>
+                <ReviewLike count={r.likes} />
               </div>
               <div className="body">{r.body}</div>
               <div className="rt">🏷 {r.tag}</div>

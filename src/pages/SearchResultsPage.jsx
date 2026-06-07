@@ -19,8 +19,8 @@ export default function SearchResultsPage() {
   const [text, setText] = useState(q);
 
   // TODO(BE): 통합검색 — q 로 아래 호출 후 더미 필터 교체.
-  //   · 경로/산: GET /track/search?name={q}
-  //   · 게시글:  GET /board?keyword={q}
+  //   · 경로/산: GET /api/track/search?name={q}
+  //   · 게시글:  GET /api/board?keyword={q}
   //   useEffect([q]) 로 재조회.
   // 디자인용 단순 필터(부분일치). 결과 없으면 빈 상태 화면.
   const hit = (s) => !q || s.includes(q);
