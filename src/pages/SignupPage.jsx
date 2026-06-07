@@ -9,7 +9,11 @@ export default function SignupPage() {
   const navigate = useNavigate();
   const onSubmit = (e) => {
     e.preventDefault();
-    navigate('/login'); // 디자인 전용
+    // TODO(BE): 회원가입 — POST /user { email, pass, name }
+    //   1) 입력값 수집(email, name=닉네임, pass) + 비밀번호 확인 일치 검증
+    //   2) 필수 약관 동의 체크 검증
+    //   3) 성공 시 로그인 페이지로 이동(혹은 자동 로그인), 실패(중복 이메일 등) 시 에러 표시
+    navigate('/login'); // 디자인 전용 (연동 시 교체)
   };
 
   return (

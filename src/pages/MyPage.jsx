@@ -15,6 +15,11 @@ const RECORDS = [
 
 export default function MyPage() {
   const [tab, setTab] = useState('저장한 산');
+  // TODO(BE): 내 정보 — GET /user (프로필: email, name, role, createdAt). 비로그인 시 /login 리다이렉트.
+  // TODO(BE): 저장한 산/코스 — GET /favorite/track 로 saved 더미 교체.
+  // TODO(BE): 내가 쓴 글 — GET /board (작성자=내 userId 필터; BE에 userId 필터 없으면 추가 요청).
+  // TODO(BE): 프로필 수정 → PATCH /user { userId, pass, name }, 탈퇴 → PATCH /user/remove.
+  // ⚠ '등반 기록' 탭은 BE에 해당 도메인 없음 → 기록 API 추가 필요.
   const saved = MOUNTAINS.slice(0, 4);
   const myPosts = FREE_POSTS.slice(0, 5);
 

@@ -36,6 +36,11 @@ export default function PostWritePage() {
 
   const onSubmit = (e) => {
     e.preventDefault();
+    // TODO(BE): 게시글 작성 — POST /board (multipart/form-data)
+    //   본문 필드: { userId(로그인유저), trackId(선택), title, content, category }
+    //   + 첨부 이미지 파일들. category 는 kind 에 따라 FREE / SUGGEST 등으로 매핑.
+    //   성공 시 생성된 글 상세 또는 목록(c.back)으로 이동.
+    //   (수정 화면이면 PUT /board/{id} 사용)
     // 디자인 전용: 저장 없이 목록으로 돌아간다.
     navigate(c.back);
   };

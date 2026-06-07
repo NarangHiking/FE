@@ -1,4 +1,6 @@
 // 디자인용 더미 게시글 데이터.
+// TODO(BE): GET /board?category=&keyword= 응답으로 교체 (자유=FREE / 건의=SUGGEST 등 category 구분).
+//   REVIEWS(별점 후기)와 SUGGESTIONS 상태배지는 BE 스키마에 없음 → 도메인 추가 협의.
 
 // 자유게시판
 export const FREE_POSTS = [

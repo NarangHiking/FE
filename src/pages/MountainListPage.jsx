@@ -12,6 +12,10 @@ export default function MountainListPage() {
   const [diff, setDiff] = useState('전체');
   const [dist, setDist] = useState('전체');
   const [sort, setSort] = useState('인기순');
+  // TODO(BE): 산 목록 — GET /mtn/list 로 받아 MOUNTAINS 더미 교체.
+  //   지역/난이도/거리 필터·정렬은 (a) 받아온 목록을 클라이언트에서 거르거나
+  //   (b) 경로 기준이면 GET /track?mtnName=&location=&height= (TrackCondition) 사용.
+  //   region/diff/dist/sort state 가 바뀔 때마다 재조회 또는 재필터.
 
   return (
     <div className="wrap">

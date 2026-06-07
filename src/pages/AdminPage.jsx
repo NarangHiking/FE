@@ -16,6 +16,10 @@ export default function AdminPage() {
   const { tab = 'users' } = useParams();
   const current = ADMIN_NAV.some((n) => n.key === tab) ? tab : 'users';
   const t = TITLES[current];
+  // TODO(BE): 관리자 권한 가드 — 로그인 유저 role !== 'ADMIN' 이면 접근 차단.
+  // TODO(BE): 목록 조회 — 유저: GET /user/list · 산: GET /mtn/list · 경로: GET /track (전체).
+  //   각 테이블의 삭제 버튼 → DELETE /mtn/{id} · DELETE /track/{id} · PATCH /user/remove.
+  //   KPI 숫자도 각 목록 length 또는 별도 통계 API 로 교체.
 
   return (
     <AdminLayout active={current} title={t.h} sub={t.sub}>

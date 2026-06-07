@@ -1,4 +1,5 @@
 // 어드민 더미 데이터 (유저 / 산 / 경로)
+// TODO(BE): GET /user/list (유저), GET /mtn/list (산), GET /track (경로) 응답으로 교체.
 export const ADMIN_USERS = [
   { id: 'U-1042', name: '산소년', email: 'mountain.boy@example.com', role: 'user', roleLabel: '일반', posts: 23, joined: '2026-01-12' },
   { id: 'U-1041', name: 'gpx마스터', email: 'gpx.master@example.com', role: 'user', roleLabel: '일반', posts: 88, joined: '2026-01-08' },

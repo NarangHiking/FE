@@ -8,6 +8,9 @@ const STATUS = ['전체', '접수', '검토중', '등록완료', '반려'];
 export default function SuggestionBoardPage() {
   const [type, setType] = useState('전체');
   const [status, setStatus] = useState('전체');
+  // TODO(BE): 건의게시판 목록 — GET /board?category=SUGGEST (자유게시판과 category 로 구분).
+  //   ⚠ 상태 배지(접수/검토중/등록완료/반려)는 현재 board 스키마에 없음
+  //   → board 에 status 컬럼 추가하거나 별도 건의 도메인 신설 필요. type 필터는 category/태그로 매핑.
 
   let list = SUGGESTIONS;
   if (type !== '전체') list = list.filter((s) => s.type === type);

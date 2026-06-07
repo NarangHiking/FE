@@ -15,6 +15,9 @@ function tagClass(tag) {
 export default function FreeBoardPage() {
   const [filter, setFilter] = useState('전체');
   const [sort, setSort] = useState('최신순');
+  // TODO(BE): 자유게시판 목록 — GET /board?category=FREE&keyword= (BE 카테고리 enum 확인)
+  //   분류 칩(filter)/정렬(sort)/검색/페이지네이션 파라미터 반영해 재조회.
+  //   각 행 클릭 → GET /board/{id} 상세. 글쓰기 버튼은 /board/write 로 이동(아래).
   const posts = filter === '전체' ? FREE_POSTS : FREE_POSTS.filter((p) => p.tag === filter);
 
   return (

@@ -26,6 +26,10 @@ export default function Header() {
           ))}
         </nav>
         <span className="spacer" />
+        {/* TODO(BE): 로그인 상태 분기 — AuthContext 로 로그인 여부 확인.
+            · 비로그인: 아래처럼 로그인/회원가입 버튼 표시
+            · 로그인: 닉네임/아바타 + 로그아웃 버튼 표시
+              로그아웃 → POST /api/auth/logout 후 토큰 삭제 + '/' 이동 */}
         <Link className="btn ghost" to="/login">로그인</Link>
         <Link className="btn pop" to="/signup">회원가입</Link>
       </div>

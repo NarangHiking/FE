@@ -6,7 +6,11 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const onSubmit = (e) => {
     e.preventDefault();
-    navigate('/'); // 디자인 전용
+    // TODO(BE): 로그인 — POST /api/auth/login { email, pass }
+    //   → 응답 { accessToken, refreshToken, userId } 저장 후 AuthContext 갱신.
+    //   1) 입력값(email, pass) controlled state 또는 ref 로 수집
+    //   2) 성공 시 토큰 저장 + 이전 페이지/홈으로 이동, 실패 시 에러 메시지 표시
+    navigate('/'); // 디자인 전용 (연동 시 교체)
   };
 
   return (
@@ -52,6 +56,8 @@ export default function LoginPage() {
             <button type="submit" className="btn pop block">로그인</button>
           </form>
 
+          {/* TODO(BE): 소셜 로그인 — 현재 BE에 OAuth 엔드포인트 없음.
+              카카오/네이버/구글 OAuth 추가 시 각 버튼 onClick 연동. */}
           <div className="divider">또는 간편 로그인</div>
           <div className="social-row">
             <button className="social-btn kakao" type="button">💬 카카오</button>

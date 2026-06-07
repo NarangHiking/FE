@@ -34,7 +34,17 @@ export default function MountainDetailPage() {
   const [tab, setTab] = useState(0);
   const [fav, setFav] = useState(false);
 
+  // TODO(BE): 산 상세 — GET /mtn/{id} (이름/위치/고도/설명/이미지)
+  // TODO(BE): 경로(코스) 목록 — GET /mtn/{mtnId}/track → 아래 ROUTES 더미를 교체.
+  //   탭 선택 시 GET /track/{trackId} 로 상세(gpxFilePath, recommendCnt) 로드.
+  // TODO(BE): 저장(찜) 상태 — 진입 시 GET /favorite/{trackId} 로 fav 초기화.
+  //   저장 토글 → POST /favorite/{trackId} / DELETE /favorite/{trackId}.
+  //   '추천(좋아요)' 이 필요하면 GET/POST/DELETE /recommend/{trackId}.
+  // TODO(BE): 별점 리뷰 섹션은 BE 스키마에 없음 → 리뷰 API 추가 또는 board(category) 활용.
+
   const route = ROUTES[tab];
+  // TODO(BE): 지도/고도 그래프는 현재 buildRoute() 더미. 실제 track.gpxFilePath 의
+  //   GPX(XML)를 fetch·파싱해 좌표/고도 배열로 만들어 TrailMap/ElevationProfile 에 전달.
   const builtRoute = useMemo(
     () => buildRoute(m.id * 7 + tab, { km: route.km, summit: route.summit, loop: route.loop, points: 13 }),
     [m.id, tab, route.km, route.summit, route.loop]
@@ -72,7 +82,9 @@ export default function MountainDetailPage() {
           </div>
 
           <div className="act-row">
+            {/* TODO(BE): GPX 다운로드 → 현재 선택된 track 의 gpxFilePath 로 연결 */}
             <a className="act pop" href="#route">⬇ GPX 다운로드</a>
+            {/* TODO(BE): 저장 토글 → POST/DELETE /favorite/{trackId} (비로그인 시 로그인 유도) */}
             <button className={'act fav' + (fav ? ' on' : '')} onClick={() => setFav((v) => !v)}>♥ 저장</button>
             <button className="act">🔗 공유</button>
             <button className="act">🚩 신고</button>
@@ -220,6 +232,8 @@ export default function MountainDetailPage() {
           </div>
         </div>
 
+        {/* TODO(BE): 리뷰 작성/목록은 BE에 전용 API 없음. 리뷰 도메인 추가하거나
+            board(category=REVIEW, trackId 연결)로 대체 후 연동. */}
         <div className="rev-write">
           <div className="av">나</div>
           <input placeholder={`${m.name} 다녀오셨나요? 후기를 남겨주세요`} />
