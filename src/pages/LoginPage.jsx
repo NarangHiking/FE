@@ -1,0 +1,69 @@
+import { Link, useNavigate } from 'react-router-dom';
+import MountainScene from '../components/MountainScene.jsx';
+import { Field, TextInput } from '../components/Form.jsx';
+
+export default function LoginPage() {
+  const navigate = useNavigate();
+  const onSubmit = (e) => {
+    e.preventDefault();
+    navigate('/'); // 디자인 전용
+  };
+
+  return (
+    <div className="auth-wrap">
+      {/* 좌측 산 풍경 */}
+      <div className="auth-art">
+        <MountainScene variant={7} palette="forest" w={760} h={1000} />
+        <div className="ht" />
+        <div className="veil" />
+        <div className="art-body">
+          <Link className="a-brand" to="/">
+            <span className="seal">⛰</span>
+            <span><b>나랑등산이다</b><span className="lat">NARANG · TRAIL CLUB</span></span>
+          </Link>
+          <div>
+            <div className="tagline">다시,<br />능선 위로<span className="o">.</span></div>
+            <p className="quote">"산은 거기 있으니까 오른다." — 저장해 둔 코스와 GPX가 당신을 기다리고 있어요.</p>
+          </div>
+          <span className="stamp-mini">· 입산 환영 · since 2026 ·</span>
+        </div>
+      </div>
+
+      {/* 우측 폼 */}
+      <div className="auth-panel">
+        <div className="auth-card">
+          <div className="eyebrow">LOG IN</div>
+          <h1>로그인</h1>
+          <p className="auth-sub">계정으로 로그인하고 코스를 저장하세요.</p>
+
+          <form className="auth-form" onSubmit={onSubmit}>
+            <Field label="이메일" required>
+              <TextInput type="email" placeholder="you@example.com" autoComplete="email" />
+            </Field>
+            <Field label="비밀번호" required>
+              <TextInput type="password" placeholder="••••••••" autoComplete="current-password" />
+            </Field>
+
+            <div className="auth-row">
+              <label className="check"><input type="checkbox" defaultChecked /> 로그인 상태 유지</label>
+              <Link to="/login">비밀번호를 잊으셨나요?</Link>
+            </div>
+
+            <button type="submit" className="btn pop block">로그인</button>
+          </form>
+
+          <div className="divider">또는 간편 로그인</div>
+          <div className="social-row">
+            <button className="social-btn kakao" type="button">💬 카카오</button>
+            <button className="social-btn naver" type="button">N 네이버</button>
+            <button className="social-btn google" type="button">G 구글</button>
+          </div>
+
+          <div className="auth-foot">
+            아직 회원이 아니신가요? <Link to="/signup">회원가입 →</Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

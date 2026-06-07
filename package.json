@@ -1,0 +1,21 @@
+{
+  "name": "narang-deungsan",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "나랑등산이다 — GPX 등산 코스 트래킹 서비스 (디자인 전용)",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.2",
+    "vite": "^5.4.8"
+  }
+}
