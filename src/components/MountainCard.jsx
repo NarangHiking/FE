@@ -25,9 +25,18 @@ export default function MountainCard({ m, sceneVariant, showRank = true }) {
           <span className="reg">{m.region}</span>
         </div>
         <div className="meta">
-          <div className="m"><div className="k">거리</div><div className="v">{m.dist}</div></div>
-          <div className="m"><div className="k">소요</div><div className="v">{m.time}</div></div>
-          <div className="m"><div className="k">난이도</div><div className={`v lv-${m.lvN}`}>{m.lv}</div></div>
+          {m.dist ? (
+            <>
+              <div className="m"><div className="k">거리</div><div className="v">{m.dist}</div></div>
+              <div className="m"><div className="k">소요</div><div className="v">{m.time}</div></div>
+              <div className="m"><div className="k">난이도</div><div className={`v lv-${m.lvN}`}>{m.lv}</div></div>
+            </>
+          ) : (
+            <>
+              <div className="m"><div className="k">고도</div><div className="v">{m.ele}m</div></div>
+              <div className="m"><div className="k">위치</div><div className="v" style={{ fontSize: 13 }}>{m.region}</div></div>
+            </>
+          )}
         </div>
       </div>
     </Link>

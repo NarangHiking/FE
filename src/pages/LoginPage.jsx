@@ -1,16 +1,31 @@
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import MountainScene from '../components/MountainScene.jsx';
 import { Field, TextInput } from '../components/Form.jsx';
+import { useAuth } from '../context/AuthContext.jsx'; // ← Context 훅
 
 export default function LoginPage() {
   const navigate = useNavigate();
-  const onSubmit = (e) => {
+  const { login } = useAuth(); // Context 에서 login 함수 꺼내기
+
+  // controlled input: 값이 바뀔 때마다 state 를 갱신해 React 가 추적하게 한다
+  const [email, setEmail]     = useState('');
+  const [pass, setPass]       = useState('');
+  const [error, setError]     = useState('');   // 에러 메시지
+  const [loading, setLoading] = useState(false); // 중복 제출 방지
+
+  const onSubmit = async (e) => {
     e.preventDefault();
-    // TODO(BE): 로그인 — POST /api/auth/login { email, pass }
-    //   → 응답 { accessToken, refreshToken, userId } 저장 후 AuthContext 갱신.
-    //   1) 입력값(email, pass) controlled state 또는 ref 로 수집
-    //   2) 성공 시 토큰 저장 + 이전 페이지/홈으로 이동, 실패 시 에러 메시지 표시
-    navigate('/'); // 디자인 전용 (연동 시 교체)
+    setError('');
+    setLoading(true);
+    try {
+      await login(email, pass);  // POST /api/auth/login
+      navigate('/');             // 성공 → 홈으로
+    } catch (err) {
+      setError(err.message);     // 실패 → 에러 메시지 표시
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -42,28 +57,38 @@ export default function LoginPage() {
 
           <form className="auth-form" onSubmit={onSubmit}>
             <Field label="이메일" required>
-              <TextInput type="email" placeholder="you@example.com" autoComplete="email" />
+              {/* value + onChange 로 controlled input 완성 */}
+              <TextInput
+                type="email"
+                placeholder="you@example.com"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+              />
             </Field>
             <Field label="비밀번호" required>
-              <TextInput type="password" placeholder="••••••••" autoComplete="current-password" />
+              <TextInput
+                type="password"
+                placeholder="••••••••"
+                autoComplete="current-password"
+                value={pass}
+                onChange={(e) => setPass(e.target.value)}
+              />
             </Field>
+
+            {/* 에러 메시지: error 가 있을 때만 렌더링 */}
+            {error && <p className="form-error">{error}</p>}
 
             <div className="auth-row">
               <label className="check"><input type="checkbox" defaultChecked /> 로그인 상태 유지</label>
               <Link to="/login">비밀번호를 잊으셨나요?</Link>
             </div>
 
-            <button type="submit" className="btn pop block">로그인</button>
+            {/* disabled + 텍스트 변경으로 중복 제출 방지 */}
+            <button type="submit" className="btn pop block" disabled={loading}>
+              {loading ? '로그인 중…' : '로그인'}
+            </button>
           </form>
-
-          {/* TODO(BE): 소셜 로그인 — 현재 BE에 OAuth 엔드포인트 없음.
-              카카오/네이버/구글 OAuth 추가 시 각 버튼 onClick 연동. */}
-          <div className="divider">또는 간편 로그인</div>
-          <div className="social-row">
-            <button className="social-btn kakao" type="button">💬 카카오</button>
-            <button className="social-btn naver" type="button">N 네이버</button>
-            <button className="social-btn google" type="button">G 구글</button>
-          </div>
 
           <div className="auth-foot">
             아직 회원이 아니신가요? <Link to="/signup">회원가입 →</Link>

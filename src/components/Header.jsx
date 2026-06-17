@@ -1,13 +1,22 @@
-import { NavLink, Link } from 'react-router-dom';
+import { NavLink, Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext.jsx';
 
 const LINKS = [
   { to: '/mountains', label: '산 목록' },
-  { to: '/board', label: '자유게시판' },
-  { to: '/suggestions', label: '건의게시판' },
+  { to: '/board', label: '커뮤니티' },
   { to: '/mypage', label: '마이페이지' },
 ];
 
 export default function Header() {
+  // useAuth() 로 현재 로그인 상태와 logout 함수 꺼내기
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();   // POST /api/auth/logout + localStorage 정리
+    navigate('/');    // 홈으로
+  };
+
   return (
     <header>
       <div className="wrap nav">
@@ -26,12 +35,19 @@ export default function Header() {
           ))}
         </nav>
         <span className="spacer" />
-        {/* TODO(BE): 로그인 상태 분기 — AuthContext 로 로그인 여부 확인.
-            · 비로그인: 아래처럼 로그인/회원가입 버튼 표시
-            · 로그인: 닉네임/아바타 + 로그아웃 버튼 표시
-              로그아웃 → POST /api/auth/logout 후 토큰 삭제 + '/' 이동 */}
-        <Link className="btn ghost" to="/login">로그인</Link>
-        <Link className="btn pop" to="/signup">회원가입</Link>
+
+        {/* user 가 null 이면 비로그인, 있으면 로그인 상태 */}
+        {user ? (
+          <>
+            <span>{user.name}</span>
+            <button className="btn pop" type="button" onClick={handleLogout}>로그아웃</button>
+          </>
+        ) : (
+          <>
+            <Link className="btn ghost" to="/login">로그인</Link>
+            <Link className="btn pop" to="/signup">회원가입</Link>
+          </>
+        )}
       </div>
     </header>
   );

@@ -1,20 +1,45 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { SUGGESTIONS } from '../data/posts.js';
+import { apiFetch } from '../context/AuthContext.jsx';
 
-const TYPES = ['전체', '산 추가', '경로 수정', '기능 제안', '오류 신고'];
-const STATUS = ['전체', '접수', '검토중', '등록완료', '반려'];
+const PAGE_SIZE = 15;
 
 export default function SuggestionBoardPage() {
-  const [type, setType] = useState('전체');
-  const [status, setStatus] = useState('전체');
-  // TODO(BE): 건의게시판 목록 — GET /api/board?category=SUGGEST (자유게시판과 category 로 구분).
-  //   ⚠ 상태 배지(접수/검토중/등록완료/반려)는 현재 board 스키마에 없음
-  //   → board 에 status 컬럼 추가하거나 별도 건의 도메인 신설 필요. type 필터는 category/태그로 매핑.
+  const [posts, setPosts]     = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError]     = useState('');
+  const [keyword, setKeyword] = useState('');
+  const [input, setInput]     = useState('');
+  const [page, setPage]       = useState(1);
 
-  let list = SUGGESTIONS;
-  if (type !== '전체') list = list.filter((s) => s.type === type);
-  if (status !== '전체') list = list.filter((s) => s.statusLabel === status);
+  useEffect(() => {
+    setLoading(true);
+    setPage(1);
+    const params = new URLSearchParams({ category: 'feedback' });
+    if (keyword) params.append('keyword', keyword);
+
+    apiFetch(`/api/board?${params}`)
+      .then((res) => {
+        if (!res.ok) throw new Error('건의글을 불러오지 못했습니다.');
+        return res.json();
+      })
+      .then((json) => setPosts(json.data ?? json))
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, [keyword]);
+
+  const search = () => setKeyword(input);
+
+  const totalPages = Math.max(1, Math.ceil(posts.length / PAGE_SIZE));
+  const pagePosts  = posts.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  function getPageNums() {
+    const nums = [];
+    const start = Math.max(1, page - 2);
+    const end   = Math.min(totalPages, start + 4);
+    for (let i = start; i <= end; i++) nums.push(i);
+    return nums;
+  }
 
   return (
     <div className="wrap">
@@ -35,7 +60,6 @@ export default function SuggestionBoardPage() {
         <Link to="/suggestions" className="on">건의게시판</Link>
       </div>
 
-      {/* 건의 CTA */}
       <div className="suggest-cta" style={{ marginTop: 18 }}>
         <div className="ic">📮</div>
         <div className="tx">
@@ -47,42 +71,61 @@ export default function SuggestionBoardPage() {
 
       <div className="board-shell">
         <div className="board-toolbar">
+          <div className="left" />
           <div className="left">
-            {TYPES.map((t) => (
-              <span key={t} className={'chip' + (type === t ? ' on' : '')} onClick={() => setType(t)}>{t}</span>
-            ))}
-          </div>
-          <div className="left">
-            {STATUS.map((s) => (
-              <span key={s} className={'chip' + (status === s ? ' on' : '')} onClick={() => setStatus(s)}>{s}</span>
-            ))}
+            <div className="search-mini">
+              <span>🔍</span>
+              <input
+                placeholder="게시판 내 검색"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && search()}
+              />
+            </div>
             <Link className="btn pop sm" to="/suggestions/write">✏ 건의하기</Link>
           </div>
         </div>
 
-        <div className="board-table">
-          <div className="thead">
-            <span>유형</span><span>제목</span><span>상태</span><span>작성자</span><span>댓글</span><span>작성</span>
-          </div>
-          {list.map((s) => (
-            <Link key={s.id} className="board-row" to="/suggestions">
-              <span className="b-tag info">{s.type}</span>
-              <span className="b-title">{s.title}</span>
-              <span><span className={'st-badge ' + s.status}>{s.statusLabel}</span></span>
-              <span className="b-meta">{s.author}</span>
-              <span className="b-num">{s.cm}</span>
-              <span className="b-num">{s.time}</span>
-            </Link>
-          ))}
-        </div>
+        {loading && <p style={{ padding: 40, textAlign: 'center' }}>불러오는 중…</p>}
+        {error   && <p style={{ padding: 40, textAlign: 'center', color: 'var(--pop)' }}>{error}</p>}
 
-        <div className="pagination">
-          <span className="pg ghost">←</span>
-          {[1, 2, 3].map((n) => (
-            <span key={n} className={'pg' + (n === 1 ? ' on' : '')}>{n}</span>
-          ))}
-          <span className="pg ghost">→</span>
-        </div>
+        {!loading && !error && (
+          <div className="board-table">
+            <div className="thead">
+              <span>작성자</span><span>제목</span><span>작성</span><span>댓글</span>
+            </div>
+            {pagePosts.length === 0
+              ? <p style={{ padding: 40, textAlign: 'center', color: 'var(--ink-soft)' }}>건의글이 없습니다.</p>
+              : pagePosts.map((p) => (
+                <Link key={p.id} className="board-row" to={`/board/${p.id}`}>
+                  <span className="b-meta">{p.name}</span>
+                  <span className="b-title">
+                    {p.title}
+                    {p.commentCount > 0 && <span className="cmt">[{p.commentCount}]</span>}
+                  </span>
+                  <span className="b-meta">{p.createdAt}</span>
+                  <span className="b-num">{p.commentCount}</span>
+                </Link>
+              ))
+            }
+          </div>
+        )}
+
+        {!loading && !error && (
+          <div className="pagination">
+            <span
+              className={'pg ghost' + (page === 1 ? ' disabled' : '')}
+              onClick={() => page > 1 && setPage(page - 1)}
+            >←</span>
+            {getPageNums().map((n) => (
+              <span key={n} className={'pg' + (n === page ? ' on' : '')} onClick={() => setPage(n)}>{n}</span>
+            ))}
+            <span
+              className={'pg ghost' + (page === totalPages ? ' disabled' : '')}
+              onClick={() => page < totalPages && setPage(page + 1)}
+            >→</span>
+          </div>
+        )}
       </div>
     </div>
   );

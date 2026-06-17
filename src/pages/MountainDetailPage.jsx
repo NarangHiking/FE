@@ -1,277 +1,429 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import MountainScene from '../components/MountainScene.jsx';
-import MountainCard from '../components/MountainCard.jsx';
-import { TrailMap, ElevationProfile, buildRoute } from '../components/TrailMap.jsx';
-import { getMountain, MOUNTAINS } from '../data/mountains.js';
-import { REVIEWS } from '../data/posts.js';
+import { MOUNTAINS } from '../data/mountains.js';
+import { apiFetch, useAuth } from '../context/AuthContext.jsx';
 
-const ROUTES = [
-  { name: '백운대 정규 코스', meta: '대표 · 원점회귀', km: 5.2, summit: 836, lv: '중급', lvN: 2, loop: true },
-  { name: '사패산 능선 코스', meta: '종주 · 편도', km: 8.1, summit: 740, lv: '상급', lvN: 3, loop: false },
-  { name: '둘레길 순환 코스', meta: '입문 · 원점회귀', km: 3.4, summit: 410, lv: '초급', lvN: 1, loop: true },
-];
+const PALETTES = ['forest', 'moss', 'alpine', 'dusk', 'mist', 'dawn'];
 
-const WAYPOINTS = [
-  { cls: 'start', nm: '탐방지원센터 (출발)', info: '0.0km · 고도 180m · 09:00' },
-  { cls: '', nm: '약수터', info: '1.4km · 고도 420m · 09:50' },
-  { cls: '', nm: '갈림길 (백운대 방면)', info: '2.6km · 고도 610m · 10:35' },
-  { cls: 'peak', nm: '백운대 정상 ▲', info: '3.2km · 고도 836m · 11:20' },
-  { cls: '', nm: '전망 바위', info: '4.1km · 고도 590m · 12:05' },
-  { cls: '', nm: '탐방지원센터 (도착)', info: '5.2km · 고도 180m · 13:10' },
-];
+// 기상청 단기예보 코드 → 아이콘/텍스트 (SKY 1맑음 3구름많음 4흐림 / PTY 0없음 1비 2비눈 3눈 4소나기)
+function wxIcon(w) {
+  if (!w) return '⛅';
+  const pty = w.precipitationType;
+  if (pty && pty !== '0') return pty === '3' ? '❄️' : pty === '2' ? '🌨' : '🌧';
+  return w.sky === '1' ? '☀️' : w.sky === '4' ? '☁️' : '⛅';
+}
+function wxText(w) {
+  if (!w) return '';
+  const pty = w.precipitationType;
+  if (pty && pty !== '0') return pty === '1' ? '비' : pty === '2' ? '비/눈' : pty === '3' ? '눈' : '소나기';
+  return w.sky === '1' ? '맑음' : w.sky === '4' ? '흐림' : '구름 많음';
+}
+const fmtHour = (t) => (t ? `${String(t).slice(0, 2)}시` : '');
+const fmtClock = (t) => { if (!t) return '—'; const s = String(t).trim().padStart(4, '0'); return `${s.slice(0, 2)}:${s.slice(2, 4)}`; };
+const todayYmd = () => { const d = new Date(); return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`; };
 
-// 후기 카드의 '도움돼요' 좋아요 토글
-function ReviewLike({ count }) {
-  const [on, setOn] = useState(false);
-  // TODO(BE): 후기 좋아요(도움돼요) API 연동(별도 도메인 필요 시 추가)
-  return (
-    <button className={'rev-like' + (on ? ' on' : '')} onClick={() => setOn((v) => !v)}>
-      👍 {count + (on ? 1 : 0)}
-    </button>
-  );
+// BE Track → 코스 탭 포맷 변환 (km·lv 는 BE Track 에 없어 더미)
+function toRoute(track, fallbackSummit) {
+  return {
+    id: track.id,
+    name: track.name,
+    summit: fallbackSummit,
+    gpxFilePath: track.gpxFilePath,
+    recommendCnt: track.recommendCnt ?? 0,
+  };
 }
 
 export default function MountainDetailPage() {
   const { id } = useParams();
-  const m = getMountain(id);
+
+  // ── 산 상세 & 코스 목록 상태 ──
+  const [mtn, setMtn] = useState(null);
+  const [routes, setRoutes] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  const { user } = useAuth();
+
   const [tab, setTab] = useState(0);
   const [fav, setFav] = useState(false);
   const [liked, setLiked] = useState(false);
-  const likes = 311 + (liked ? 1 : 0);
+  const [likeCount, setLikeCount] = useState(0);
 
-  // TODO(BE): 산 상세 — GET /api/mtn/{id} (이름/위치/고도/설명/이미지)
-  // TODO(BE): 경로(코스) 목록 — GET /api/mtn/{mtnId}/track → 아래 ROUTES 더미를 교체.
-  //   탭 선택 시 GET /api/track/{trackId} 로 상세(gpxFilePath, recommendCnt) 로드.
-  // TODO(BE): 저장(찜) 상태 — 진입 시 GET /api/favorite/{trackId} 로 fav 초기화.
-  //   저장 토글 → POST /api/favorite/{trackId} / DELETE /api/favorite/{trackId}.
-  //   코스 좋아요는 GET/POST/DELETE /api/recommend/{trackId} (아래 좋아요 섹션).
-  // TODO(BE): 별점 리뷰 섹션은 BE 스키마에 없음 → 리뷰 API 추가 또는 board(category) 활용.
+  // 화면(디자인) 상태
+  const [aiOpen, setAiOpen] = useState(true);
 
-  const route = ROUTES[tab];
-  // TODO(BE): 지도/고도 그래프는 현재 buildRoute() 더미. 실제 track.gpxFilePath 의
-  //   GPX(XML)를 fetch·파싱해 좌표/고도 배열로 만들어 TrailMap/ElevationProfile 에 전달.
-  const builtRoute = useMemo(
-    () => buildRoute(m.id * 7 + tab, { km: route.km, summit: route.summit, loop: route.loop, points: 13 }),
-    [m.id, tab, route.km, route.summit, route.loop]
-  );
-  const related = MOUNTAINS.filter((x) => x.id !== m.id).slice(0, 4);
+  // 날씨(시간대별) + 일출/일몰
+  const [weather, setWeather] = useState([]);
+  const [wxIdx, setWxIdx] = useState(0);
+  const [wxErr, setWxErr] = useState(false);
+  const [sun, setSun] = useState(null);
+
+  // 트랙(코스)별 댓글
+  const [comments, setComments] = useState([]);
+  const [cmtText, setCmtText] = useState('');
+  const [cmtFiles, setCmtFiles] = useState([]);
+  const [cmtBusy, setCmtBusy] = useState(false);
+  const fileRef = useRef(null);
+
+  // 이미지 응답 필드명이 확정 전이라 방어적으로 처리 (url / imageUrl / path / storedFilename)
+  const imgSrc = (img) =>
+    typeof img === 'string' ? img : (img?.url ?? img?.imageUrl ?? img?.path ?? img?.storedFilename ?? '');
+
+  // ── 산 상세 + 코스 목록 병렬 조회 ──
+  useEffect(() => {
+    setLoading(true);
+    Promise.all([
+      apiFetch(`/api/mtn/${id}`).then((r) => r.json()),
+      apiFetch(`/api/mtn/${id}/track`).then((r) => r.json()),
+    ])
+      .then(([mtnJson, trackJson]) => {
+        const mtnData = mtnJson.data ?? mtnJson;
+        const trackData = trackJson.data ?? trackJson;
+        setMtn(mtnData);
+        setRoutes((trackData ?? []).map((t) => toRoute(t, mtnData.height ?? 0)));
+        setTab(0);
+      })
+      .catch(() => setError('데이터를 불러오지 못했습니다.'))
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  // ── 날씨(시간대별) + 일출/일몰 조회 ──
+  //   GET /api/weather?mtnName=&fcstDate=(오늘)  → [WeatherResponse...]
+  //   GET /api/sun?locdate=&location=            → response.body.items.item {sunrise,sunset}
+  useEffect(() => {
+    if (!mtn?.name) return;
+    const ymd = todayYmd();
+    setWxErr(false);
+    apiFetch(`/api/weather?mtnName=${encodeURIComponent(mtn.name)}`)
+      .then((r) => (r.ok ? r.json() : Promise.reject()))
+      .then((j) => { setWeather(j.data ?? j); setWxIdx(0); })
+      .catch(() => setWxErr(true));
+    // KASI 일출일몰 location 은 지명(시/도)만 받음 → mtn.location 의 첫 지명 사용 (예: "서울/경기" → "서울")
+    const sunLoc = (mtn.location || mtn.name).split('/')[0].trim().split(' ')[0];
+    apiFetch(`/api/sun?locdate=${ymd}&location=${encodeURIComponent(sunLoc)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => {
+        if (!j) return;
+        const item = j?.data?.response?.body?.items?.item ?? j?.response?.body?.items?.item ?? null;
+        if (item) setSun(item);
+      })
+      .catch(() => {});
+  }, [mtn?.name]);
+
+  // ── 코스 탭 바뀔 때 추천 여부 조회 ──
+  useEffect(() => {
+    const trackId = routes[tab]?.id;
+    setLikeCount(routes[tab]?.recommendCnt ?? 0);
+    if (!user || !trackId) {
+      setLiked(false);
+      setFav(false);
+      return;
+    }
+    // 추천 여부 GET /api/recommend/{trackId}
+    apiFetch(`/api/recommend/${trackId}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => { if (json) setLiked(json.data ?? false); })
+      .catch(() => {});
+    // 저장(즐겨찾기) 여부 GET /api/favorite/{trackId}
+    apiFetch(`/api/favorite/${trackId}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => { if (json) setFav(json.data ?? false); })
+      .catch(() => {});
+  }, [tab, routes, user]);
+
+  // ── ♥ 추천 토글: POST/DELETE /api/recommend/{trackId} ──
+  async function toggleLike() {
+    if (!user) return;
+    const trackId = routes[tab]?.id;
+    if (!trackId) return;
+    const method = liked ? 'DELETE' : 'POST';
+    const res = await apiFetch(`/api/recommend/${trackId}`, { method });
+    if (res.ok) {
+      setLiked((v) => !v);
+      setLikeCount((c) => (liked ? c - 1 : c + 1));
+    }
+  }
+
+  // ── ☆ 저장(즐겨찾기) 토글: POST/DELETE /api/favorite/{trackId} ──
+  async function toggleFav() {
+    if (!user) { alert('로그인 후 코스를 저장할 수 있어요.'); return; }
+    const trackId = routes[tab]?.id;
+    if (!trackId) return;
+    const method = fav ? 'DELETE' : 'POST';
+    const res = await apiFetch(`/api/favorite/${trackId}`, { method });
+    if (res.ok) setFav((v) => !v);
+  }
+
+  // ── 트랙별 댓글 로드: 코스 탭이 바뀌면 해당 trackId 댓글만 조회 ──
+  // TODO(BE): 트랙 댓글 API 필요(게시판 댓글과 동일 형태).
+  //   GET  /api/track/{trackId}/comment
+  //   POST /api/track/{trackId}/comment            { content }
+  //   DELETE /api/track/{trackId}/comment/{commentId}
+  //   응답: { id, userId, name, content, createdAt }
+  useEffect(() => {
+    const trackId = routes[tab]?.id;
+    if (!trackId) { setComments([]); return; }
+    apiFetch(`/api/track/${trackId}/comment`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => setComments(json ? (json.data ?? json) : []))
+      .catch(() => setComments([]));
+  }, [tab, routes]);
+
+  // 댓글 작성 / 삭제
+  // POST /api/track/{trackId}/comment — multipart: comment(JSON 파트) + images(파일)
+  async function submitComment(e) {
+    e.preventDefault();
+    const trackId = routes[tab]?.id;
+    if (!trackId || !cmtText.trim()) return;
+    setCmtBusy(true);
+    try {
+      const fd = new FormData();
+      // @RequestPart("comment") TrackCommentRequest → JSON Blob 으로 첨부 (userId/trackId 는 서버가 채움)
+      fd.append('comment', new Blob([JSON.stringify({ content: cmtText })], { type: 'application/json' }));
+      cmtFiles.forEach((f) => fd.append('images', f));
+      const res = await apiFetch(`/api/track/${trackId}/comment`, { method: 'POST', body: fd });
+      if (!res.ok) throw new Error();
+      const json = await apiFetch(`/api/track/${trackId}/comment`).then((r) => r.json());
+      setComments(json.data ?? json);
+      setCmtText('');
+      setCmtFiles([]);
+      if (fileRef.current) fileRef.current.value = '';
+    } catch {
+      alert('댓글 작성에 실패했습니다.');
+    } finally {
+      setCmtBusy(false);
+    }
+  }
+  async function deleteComment(commentId) {
+    const trackId = routes[tab]?.id;
+    if (!trackId || !window.confirm('댓글을 삭제하시겠습니까?')) return;
+    const res = await apiFetch(`/api/track/${trackId}/comment/${commentId}`, { method: 'DELETE' });
+    if (res.ok) setComments((prev) => prev.filter((c) => c.id !== commentId));
+    else alert('댓글 삭제에 실패했습니다.');
+  }
+
+  if (loading) return <div className="wrap" style={{ padding: 60, textAlign: 'center' }}>불러오는 중…</div>;
+  if (error) return <div className="wrap" style={{ padding: 60, textAlign: 'center', color: 'var(--pop)' }}>{error}</div>;
+  if (!mtn) return null;
+
+  const pal = PALETTES[mtn.id % PALETTES.length];
+  const route = routes[tab];
+
+  // ── 지도 좌표 ──
+  // TODO(BE): Mtn DTO 에 lat/lng 추가 권장. 현재는 더미 좌표표에서 이름으로 매칭, 없으면 북한산.
+  const coord = MOUNTAINS.find((x) => x.name === mtn.name);
+  const lat = mtn.lat ?? coord?.lat ?? 37.6586;
+  const lng = mtn.lng ?? coord?.lng ?? 126.9779;
+  const dLat = 0.05, dLng = 0.075;
+  const bbox = `${lng - dLng}%2C${lat - dLat}%2C${lng + dLng}%2C${lat + dLat}`;
+  const mapSrc = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat}%2C${lng}`;
+
+  // ── AI 어시스턴트 (디자인용 정적 대화) ──
+  // TODO(AI): 실제 어시스턴트 연동(Claude API 등). BE 레포엔 없음 → 별도 AI 서비스 필요.
+  const aiMsgs = [
+    { role: 'bot', text: `${mtn.name}은(는) 서울 도심에서 가장 가까운 국립공원이에요. ${mtn.height}m가 최고봉이며, 주능선 코스가 가장 인기 있습니다. 왕복 약 4~5시간 소요됩니다.` },
+    { role: 'user', text: '준비물 알려줘' },
+    { role: 'bot', text: '필수 준비물로는 등산화, 등산스틱, 여벌 옷, 충분한 물(1인 1.5L 이상), 간식, 구급약, 지도 또는 GPS를 챙기시길 추천드려요!' },
+  ];
+  const aiChips = ['날씨 확인', '초보 코스 추천', '준비물 알려줘', `${mtn.name} 정보`];
+
+  // 시간대별 날씨 (앞쪽 8개 슬롯) + 선택 슬롯
+  const wxSlots = weather.slice(0, 8);
+  const wxCur = wxSlots[wxIdx] ?? wxSlots[0] ?? null;
 
   return (
-    <div className="wrap">
-      <div className="crumb">
-        <Link to="/">홈</Link><span className="sep">/</span>
-        <Link to="/mountains">산 목록</Link><span className="sep">/</span>
-        <span className="here">{m.name}</span>
-      </div>
-
-      {/* ───── 상세 히어로 ───── */}
-      <section className="d-hero">
-        <div>
-          <div className="meta-tags">
-            <span className="tag green">📍 {m.region}</span>
-            <span className="tag">고도 {m.ele}m</span>
-            <span className="tag pop">GPX 제공</span>
-          </div>
-          <h1>{m.name}</h1>
-          <div className="hanja">{m.hanja} · {m.region}</div>
-          <p className="desc">
-            능선 조망이 뛰어난 {m.region}의 대표 명산. 화강암 봉우리와 사계절 다른 풍경으로 사랑받는 코스입니다.
-            GPX 트랙으로 출발지·고도·갈림길을 미리 확인하고 안전하게 다녀오세요.
-          </p>
-
-          <div className="stat-strip">
-            <div className="st"><div className="k">대표 거리</div><div className="v">{m.dist}</div></div>
-            <div className="st"><div className="k">소요</div><div className="v">{m.time}</div></div>
-            <div className="st"><div className="k">난이도</div><div className="v">{m.lv}</div></div>
-            <div className="st"><div className="k">최고 고도</div><div className="v">{m.ele}<small>m</small></div></div>
-          </div>
-
-          <div className="act-row">
-            {/* TODO(BE): GPX 다운로드 → 현재 선택된 track 의 gpxFilePath 로 연결 */}
-            <a className="act pop" href="#route">⬇ GPX 다운로드</a>
-            {/* TODO(BE): 저장 토글 → POST/DELETE /api/favorite/{trackId} (비로그인 시 로그인 유도) */}
-            <button className={'act fav' + (fav ? ' on' : '')} onClick={() => setFav((v) => !v)}>♥ 저장</button>
-            <button className="act">🔗 공유</button>
-            <button className="act">🚩 신고</button>
-          </div>
-        </div>
-
-        <div className="photo">
-          <MountainScene variant={m.id + 30} palette={m.pal} w={440} h={340} />
+    <div className="md">
+      {/* ───── 좌측: 정보 + 후기 ───── */}
+      <aside className="md-left">
+        <div className="md-hero">
+          <MountainScene variant={(mtn.id ?? 1) + 30} palette={pal} w={384} h={196} />
           <div className="ht" />
-          <span className="cap">📷 {m.name} 정상부 · 비공식 자료</span>
-        </div>
-      </section>
-
-      {/* ───── 코스 정보 ───── */}
-      <section className="d-main" id="route">
-        <div>
-          <div className="blk-head">
-            <span className="num">01</span>
-            <h2>코스 & 지도</h2>
-            <span className="sub">— 경로를 선택하면 지도·고도가 함께 바뀝니다</span>
+          <div className="veil" />
+          <span className="ele-badge">↑ {mtn.height}m</span>
+          <div className="hbody">
+            <div className="heyebrow">{mtn.location} · NARANG TRAIL</div>
+            <h1>{mtn.name}</h1>
           </div>
+        </div>
 
-          <div className="route-tabs">
-            {ROUTES.map((r, i) => (
-              <button key={r.name} className={'rtab' + (i === tab ? ' on' : '')} onClick={() => setTab(i)}>
-                <span>{r.name}</span>
-                <span className="rk">{r.meta} · {r.km}km</span>
+        <div className="md-sec">
+          <p className="md-desc">
+            {mtn.description ?? `${mtn.location}의 대표 명산. GPX 트랙으로 출발지·고도·갈림길을 미리 확인하고 안전하게 다녀오세요.`}
+          </p>
+        </div>
+
+        <div className="md-sec">
+          <div className="md-label">COURSE</div>
+          {routes.length === 0 ? (
+            <select className="inp" disabled><option>등록된 코스가 없습니다</option></select>
+          ) : (
+            <select className="inp" value={tab} onChange={(e) => setTab(Number(e.target.value))}>
+              {routes.map((r, i) => (
+                <option key={r.id ?? i} value={i}>코스 {i + 1} - {r.name}</option>
+              ))}
+            </select>
+          )}
+        </div>
+
+        <div className="md-sec" style={{ borderBottom: 'none' }}>
+          <div className="md-reviews-head">
+            <div>
+              <div className="t">TRAIL COMMENTS</div>
+              <div className="n">댓글 {comments.length}개</div>
+            </div>
+            <span className="cmt">💬</span>
+          </div>
+          {/* 선택된 코스(트랙)별로 댓글이 나뉜다 */}
+          {route && <div className="cmt-track-label">📍 {route.name}</div>}
+
+          {/* 댓글 작성 (로그인 시) */}
+          {user ? (
+            <form className="md-cmt-form" onSubmit={submitComment}>
+              <textarea
+                placeholder={`이 코스 후기를 남겨주세요`}
+                value={cmtText}
+                onChange={(e) => setCmtText(e.target.value)}
+                rows={2}
+              />
+              <div className="md-cmt-foot">
+                <label className="cmt-file">
+                  📷 사진{cmtFiles.length > 0 ? ` ${cmtFiles.length}` : ''}
+                  <input ref={fileRef} type="file" accept="image/*" multiple hidden
+                    onChange={(e) => setCmtFiles(Array.from(e.target.files))} />
+                </label>
+                <button className="btn pop sm" type="submit" disabled={cmtBusy || !route}>
+                  {cmtBusy ? '등록 중…' : '댓글 등록'}
+                </button>
+              </div>
+            </form>
+          ) : (
+            <p className="md-cmt-login">댓글을 남기려면 <Link to="/login">로그인</Link>이 필요합니다.</p>
+          )}
+
+          {comments.length === 0 ? (
+            <p className="md-cmt-empty">아직 이 코스에 댓글이 없어요. 첫 후기를 남겨보세요!</p>
+          ) : (
+            comments.map((c) => (
+              <div className="review-item" key={c.id}>
+                <div className="rtop">
+                  <div className="rav">{(c.name ?? '?').slice(0, 1)}</div>
+                  <div className="rwho">{c.name}</div>
+                  <div className="rdate">{c.createdAt}</div>
+                  {user && user.name === c.name && (
+                    <button className="cmt-del" onClick={() => deleteComment(c.id)}>삭제</button>
+                  )}
+                </div>
+                <div className="rbody">{c.content}</div>
+                {Array.isArray(c.images) && c.images.length > 0 && (
+                  <div className="rphotos">
+                    {c.images.map((img, k) => (
+                      <a className="rphoto" key={k} href={imgSrc(img)} target="_blank" rel="noreferrer">
+                        <img src={imgSrc(img)} alt="" />
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      </aside>
+
+      {/* ───── 중앙: 지도 + 코스/날씨 카드 ───── */}
+      <div className="md-map">
+        <iframe
+          className="md-iframe"
+          title={`${mtn.name} 지도`}
+          src={mapSrc}
+          loading="lazy"
+        />
+
+        {/* 코스 + 날씨 플로팅 카드 */}
+        <div className="md-course-card">
+          <div className="cc-eyebrow">🥾 선택 코스</div>
+          <div className="cc-top">
+            <div className="cc-title">{route ? route.name : '등록된 코스 없음'}</div>
+            <div className="cc-actions">
+              <button className={'cc-save' + (fav ? ' on' : '')} onClick={toggleFav}
+                title={user ? '' : '로그인 후 저장'}>
+                {fav ? '★ 저장됨' : '☆ 저장'}
               </button>
-            ))}
-          </div>
-
-          <div className="map-card">
-            <div className="map">
-              <TrailMap route={builtRoute} w={760} h={380} />
-              <div className="legend">
-                <div className="li"><span className="sw start" />출발지</div>
-                <div className="li"><span className="sw peak" />정상</div>
-                <div className="li"><span className="sw end" />{route.loop ? '원점회귀' : '종착지'}</div>
-                <div className="li"><span className="sw route" />GPX 경로</div>
-              </div>
-            </div>
-            <div className="elev-wrap">
-              <div className="eh">
-                <span className="t">고도 프로필 · ELEVATION</span>
-                <span className="t">최고 {route.summit}m</span>
-              </div>
-              <ElevationProfile route={builtRoute} w={760} h={150} />
+              <button className="ic" title="공유">🔗</button>
             </div>
           </div>
-
-          <div className="rstat">
-            <div className="c"><div className="k">거리</div><div className="v">{route.km}km</div></div>
-            <div className="c"><div className="k">소요</div><div className="v">{m.time}</div></div>
-            <div className="c"><div className="k">최고 고도</div><div className="v">{route.summit}m</div></div>
-            <div className="c"><div className="k">누적 상승</div><div className="v">{Math.round(route.summit * 1.3)}m</div></div>
-            <div className="c"><div className="k">난이도</div><div className={`v lv${route.lvN}`}>{route.lv}</div></div>
+          <div className="cc-meta">
+            <span className="k">최고 고도</span>
+            <span className="ele">{mtn.height}m</span>
+            {/* ♥ 추천(좋아요): GET/POST/DELETE /api/recommend/{trackId} */}
+            <button
+              className="like"
+              onClick={toggleLike}
+              title={user ? '' : '로그인 후 추천할 수 있어요'}
+              style={{ background: 'none', border: 'none', cursor: user ? 'pointer' : 'not-allowed' }}
+            >
+              {liked ? '♥' : '♡'} {likeCount.toLocaleString()}
+            </button>
           </div>
 
-          <div className="blk-head" style={{ marginTop: 28 }}>
-            <span className="num">02</span>
-            <h2>주요 경유지</h2>
-            <span className="sub">— 코스 타임라인</span>
-          </div>
-          <div className="timeline">
-            {WAYPOINTS.map((w) => (
-              <div key={w.nm} className={'tl-item ' + w.cls}>
-                <div className="nm">{w.nm}</div>
-                <div className="info">{w.info}</div>
+          <div className="cc-wx-label">🌤 시간대별 날씨</div>
+          {wxSlots.length === 0 ? (
+            <div className="wx-empty">{wxErr ? '날씨 정보를 불러올 수 없어요' : '날씨 정보를 불러오는 중…'}</div>
+          ) : (
+            <>
+              <div className="wx-days">
+                {wxSlots.map((w, i) => (
+                  <div key={i} className={'wx-day' + (i === wxIdx ? ' on' : '')} onClick={() => setWxIdx(i)}>
+                    <div className="wd">{fmtHour(w.fcstTime)}</div>
+                    <div className="we">{wxIcon(w)}</div>
+                    <div className="wt">{w.temperature}°</div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* 사이드바 */}
-        <aside className="side">
-          <div className="scard">
-            <div className="sh"><h3>GPX 다운로드</h3><span className="mono">.GPX</span></div>
-            <div className="sb">
-              <div className="gpx-box">
-                <div className="ic">GPX</div>
-                <div className="tx">
-                  <div className="n">{m.name}_{route.name}.gpx</div>
-                  <div className="s">{route.km}km · {builtRoute.pts.length} 포인트</div>
+              <div className="wx-summary">
+                <span className="big">{wxIcon(wxCur)}</span>
+                <div className="now">
+                  <b>{wxText(wxCur)} {wxCur?.temperature}°C</b>
+                  <span>강수 {wxCur?.precipitationProbability}% · 습도 {wxCur?.humidity}%</span>
                 </div>
-                <a className="btn pop sm" href="#">받기</a>
-              </div>
-            </div>
-          </div>
-
-          <div className="scard">
-            <div className="sh"><h3>오늘의 날씨</h3><span className="mono">WEATHER</span></div>
-            <div className="sb">
-              <div className="wx">
-                <div className="big">⛅</div>
-                <div className="col">
-                  <div className="temp">18°</div>
-                  <div className="desc">대체로 맑음 · 입산 적합</div>
+                <div className="extra">
+                  <span>🌬 {wxCur?.windSpeed}m/s</span><span>💧 {wxCur?.precipitationProbability}%</span>
+                  <span>🌅 {fmtClock(sun?.sunrise)}</span><span>🌇 {fmtClock(sun?.sunset)}</span>
                 </div>
               </div>
-              <div className="wx-grid">
-                <div className="wi"><div className="k">체감</div><div className="v">16°</div></div>
-                <div className="wi"><div className="k">바람</div><div className="v">3 m/s</div></div>
-                <div className="wi"><div className="k">강수</div><div className="v">10%</div></div>
-                <div className="wi"><div className="k">일몰</div><div className="v">19:24</div></div>
+            </>
+          )}
+        </div>
+
+        {/* ───── 우측: AI 어시스턴트 (플로팅) ───── */}
+        {aiOpen ? (
+          <div className="md-ai">
+            <div className="ai-head">
+              <span className="ai-av">⛰</span>
+              <div className="ai-t">
+                <b>나랑등산 AI</b>
+                <span>NARANG · TRAIL ASSISTANT</span>
               </div>
+              <button className="ai-x" onClick={() => setAiOpen(false)} title="닫기">✕</button>
+            </div>
+            <div className="ai-body">
+              {aiMsgs.map((m, i) => (
+                <div key={i} className={'ai-msg ' + m.role}>{m.text}</div>
+              ))}
+            </div>
+            <div className="ai-chips">
+              {aiChips.map((c) => <span key={c} className="chip">{c}</span>)}
+            </div>
+            {/* TODO(AI): 입력/전송 → AI 어시스턴트 API 연동 */}
+            <div className="ai-input">
+              <input placeholder="궁금한 점을 물어보세요…" />
+              <button className="send" title="전송">➤</button>
             </div>
           </div>
-
-          <div className="scard">
-            <div className="sh"><h3>현장 사진</h3><span className="mono">GALLERY</span></div>
-            <div className="sb">
-              <div className="gallery">
-                <div className="g"><MountainScene variant={m.id + 41} palette="forest" w={150} h={84} /></div>
-                <div className="g"><MountainScene variant={m.id + 42} palette="dawn" w={150} h={84} /></div>
-                <div className="g"><MountainScene variant={m.id + 43} palette="alpine" w={150} h={84} /></div>
-                <div className="g more">+24장</div>
-              </div>
-            </div>
-          </div>
-        </aside>
-      </section>
-
-      {/* ───── 좋아요 & 후기 ───── */}
-      <section className="reviews">
-        <div className="blk-head">
-          <span className="num">03</span>
-          <h2>좋아요 & 후기</h2>
-          <span className="sub">— 별점 대신 좋아요로 평가해요</span>
-        </div>
-
-        {/* TODO(BE): 코스 좋아요 — 진입 시 GET /api/recommend/{trackId} 로 liked 초기화,
-            토글 시 POST/DELETE /api/recommend/{trackId}. 좋아요 수는 Track.recommendCnt. */}
-        <div className="like-top">
-          <div className="like-box">
-            <button className={'like-btn' + (liked ? ' on' : '')} onClick={() => setLiked((v) => !v)}>♥</button>
-            <div className="like-cnt"><b>{likes.toLocaleString()}</b><span>명이 좋아해요</span></div>
-          </div>
-          <div className="like-msg">
-            이 코스가 마음에 드셨나요? <b>좋아요</b>를 누르면 마이페이지에 모이고,
-            인기 코스 순위에 반영돼요. 자세한 감상은 아래에 후기로 남겨주세요.
-          </div>
-        </div>
-
-        {/* TODO(BE): 후기(텍스트) 작성/목록 — board(category=REVIEW, trackId 연결) 또는
-            댓글 API 활용. POST /api/board (multipart) / GET /api/board?... */}
-        <div className="rev-write">
-          <div className="av">나</div>
-          <input placeholder={`${m.name} 다녀오셨나요? 후기를 남겨주세요`} />
-          <button className="btn pop sm">등록</button>
-        </div>
-
-        <div className="rev-list">
-          {REVIEWS.map((r, i) => (
-            <div className="rev" key={i}>
-              <div className="top">
-                <div className="av">{r.av}</div>
-                <div>
-                  <div className="who">{r.who}</div>
-                  <div className="when">{r.when}</div>
-                </div>
-                <ReviewLike count={r.likes} />
-              </div>
-              <div className="body">{r.body}</div>
-              <div className="rt">🏷 {r.tag}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ───── 비슷한 산 ───── */}
-      <section className="related">
-        <div className="sec-head">
-          <div className="l"><span className="num">04</span><h2>비슷한 산</h2></div>
-          <Link className="more" to="/mountains">전체 보기 →</Link>
-        </div>
-        <div className="grid">
-          {related.map((rm, i) => (
-            <MountainCard key={rm.id} m={rm} sceneVariant={i + 51} showRank={false} />
-          ))}
-        </div>
-      </section>
+        ) : (
+          <button className="md-ai-fab" onClick={() => setAiOpen(true)} title="AI 어시스턴트 열기">💬</button>
+        )}
+      </div>
     </div>
   );
 }

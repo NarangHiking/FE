@@ -60,6 +60,9 @@
 .terms .row .req { color: var(--pop); font-weight: 800; margin-right: 4px; }
 .terms .row a { color: var(--ink-soft); font-family: var(--font-mono); font-size: 11px; }
 
+/* 에러 메시지 */
+.form-error { color: var(--pop); font-family: var(--font-mono); font-size: 12px; padding: 8px 12px; border: 1.5px solid var(--pop); border-radius: 8px; background: color-mix(in srgb, var(--pop) 8%, transparent); }
+
 @media (max-width: 860px) {
   .auth-wrap { grid-template-columns: 1fr; }
   .auth-art { display: none; }

@@ -1,6 +1,6 @@
 // 디자인용 더미 게시글 데이터.
 // TODO(BE): GET /api/board?category=&keyword= 응답으로 교체 (자유=FREE / 건의=SUGGEST 등 category 구분).
-//   REVIEWS(별점 후기)와 SUGGESTIONS 상태배지는 BE 스키마에 없음 → 도메인 추가 협의.
+//   산상세 후기는 트랙별 댓글 API로 이동(더미 REVIEWS 삭제됨). SUGGESTIONS 상태배지는 추후 추가 예정.
 
 // 자유게시판
 export const FREE_POSTS = [
@@ -28,11 +28,4 @@ export const SUGGESTIONS = [
   { id: 6, type: '기능 제안', title: '동행 구하기 게시판도 있으면 좋겠어요', author: '혼산탈출', status: 'reject', statusLabel: '반려', cm: 21, time: '5일 전' },
   { id: 7, type: '경로 수정', title: '지리산 종주 코스 대피소 정보 업데이트 필요', author: '종주왕', status: 'wait', statusLabel: '접수', cm: 0, time: '6일 전' },
   { id: 8, type: '산 추가', title: '전북 "대둔산" 케이블카 코스 등록 부탁', author: '대둔산팬', status: 'done', statusLabel: '등록완료', cm: 4, time: '1주 전' },
-];
-
-// 산상세 후기 (별점 대신 '도움돼요' 좋아요 수)
-export const REVIEWS = [
-  { who: '단풍요정', av: '단', when: '3일 전', likes: 38, body: '백운대 정상에서 보는 뷰가 정말 최고였어요. 단풍 시즌에 가니 사람은 많았지만 그만한 가치가 있었습니다.', tag: '가을 · 백운대 코스' },
-  { who: '주말산꾼', av: '주', when: '1주 전', likes: 12, body: '코스 자체는 좋은데 후반부 깔딱고개가 생각보다 빡셉니다. 초보라면 충분히 쉬어가면서 올라가세요.', tag: '중급 · 5시간 소요' },
-  { who: '카메라맨', av: '카', when: '2주 전', likes: 27, body: 'GPX 따라가니까 길 잃을 일 없이 편하게 다녀왔습니다. 전망 바위 포인트 강추!', tag: '사진 명소 · GPX 사용' },
 ];

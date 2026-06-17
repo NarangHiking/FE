@@ -1,38 +1,26 @@
+import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import AdminLayout from '../components/AdminLayout.jsx';
-import MountainScene from '../components/MountainScene.jsx';
-import { Field, TextInput, Textarea, Select, UnitInput, Segmented, Dropzone } from '../components/Form.jsx';
-import { findUser, findMountain, findRoute, MOUNTAIN_NAMES } from '../data/admin.js';
+import { Field, TextInput, Textarea, Select } from '../components/Form.jsx';
 import { REGIONS } from '../data/mountains.js';
+import { apiFetch } from '../context/AuthContext.jsx';
 
 const REGION_NAMES = REGIONS.map((r) => r.name);
 
-// entity 메타: 탭 key, 라벨, 목록 경로
 const META = {
-  users: { active: 'users', label: '유저', list: '/admin/users' },
-  mountains: { active: 'mountains', label: '산', list: '/admin/mountains' },
-  routes: { active: 'routes', label: '경로', list: '/admin/routes' },
+  users:     { active: 'users',     label: '유저', list: '/admin/users' },
+  mountains: { active: 'mountains', label: '산',   list: '/admin/mountains' },
+  routes:    { active: 'routes',    label: '경로', list: '/admin/routes' },
 };
 
 export default function AdminFormPage() {
   const { tab, id } = useParams();
-  const navigate = useNavigate();
   const entity = META[tab] ? tab : 'users';
-  const m = META[entity];
+  const m      = META[entity];
   const isEdit = Boolean(id);
 
   const title = `${m.label} ${isEdit ? '수정' : '등록'}`;
-  const sub = `${isEdit ? 'EDIT' : 'CREATE'} ${entity.toUpperCase()}${isEdit ? ' · ' + id : ''}`;
-
-  const onSubmit = (e) => {
-    e.preventDefault();
-    // TODO(BE): 등록/수정 저장 (entity·isEdit 분기). 폼 값 수집 후 호출:
-    //   · 유저  : 등록 POST /api/user {email,pass,name} / 수정 PATCH /api/user {userId,pass,name}
-    //   · 산(mtn): 등록 POST /api/mtn / 수정 PUT /api/mtn/{id}  (Mtn + 이미지 multipart)
-    //   · 경로(track): 등록 POST /api/track / 수정 PUT /api/track  (Track JSON + gpxFilePath, GPX 업로드)
-    //   성공 시 목록(m.list)으로 이동, 실패 시 에러 표시.
-    navigate(m.list); // 디자인 전용: 저장 없이 목록으로
-  };
+  const sub   = `${isEdit ? 'EDIT' : 'CREATE'} ${entity.toUpperCase()}${isEdit ? ' · ' + id : ''}`;
 
   return (
     <AdminLayout active={m.active} title={title} sub={sub}>
@@ -42,158 +30,272 @@ export default function AdminFormPage() {
         <span className="here">{isEdit ? `${id} 수정` : `새 ${m.label} 등록`}</span>
       </div>
 
-      <form className="form-layout solo" onSubmit={onSubmit}>
-        {entity === 'users' && <UserForm id={id} isEdit={isEdit} />}
-        {entity === 'mountains' && <MountainForm id={id} isEdit={isEdit} />}
-        {entity === 'routes' && <RouteForm id={id} isEdit={isEdit} />}
-      </form>
+      <div className="form-layout solo">
+        {entity === 'users'     && <UserForm     id={id} isEdit={isEdit} list={m.list} />}
+        {entity === 'mountains' && <MountainForm id={id} isEdit={isEdit} list={m.list} />}
+        {entity === 'routes'    && <RouteForm    id={id} isEdit={isEdit} list={m.list} />}
+      </div>
     </AdminLayout>
   );
 }
 
-function FormShell({ title, isEdit, list, meta, children, deletable }) {
+// ── 공통 폼 껍데기 ────────────────────────────────────────────
+function FormShell({ title, isEdit, list, children, onSubmit, submitting, error }) {
   return (
-    <div className="form-card">
+    <form className="form-card" onSubmit={onSubmit}>
       <div className="fc-head">
         <h2>{title}</h2>
         <span className="mono">{isEdit ? 'EDIT MODE' : 'NEW'}</span>
       </div>
       <div className="fc-body">
-        {isEdit && meta && (
-          <div className="edit-meta">
-            {meta.map((x) => (
-              <div className="em" key={x.k}><div className="k">{x.k}</div><div className="v">{x.v}</div></div>
-            ))}
-          </div>
-        )}
         <div className="form-grid">{children}</div>
       </div>
+      {error && <p style={{ color: 'var(--pop)', padding: '0 24px 12px' }}>{error}</p>}
       <div className="form-actions">
-        {isEdit && deletable && <span className="del-note">⚠ 삭제는 되돌릴 수 없습니다</span>}
         <span className="grow" />
         <Link className="btn ghost" to={list}>취소</Link>
-        {isEdit && deletable && <button type="button" className="btn">삭제</button>}
-        <button type="submit" className="btn pop">{isEdit ? '변경 저장' : '등록하기'}</button>
+        <button type="submit" className="btn pop" disabled={submitting}>
+          {submitting ? '저장 중…' : isEdit ? '변경 저장' : '등록하기'}
+        </button>
       </div>
-    </div>
+    </form>
   );
 }
 
-/* ───────── 유저 ───────── */
-function UserForm({ id, isEdit }) {
-  const u = isEdit ? findUser(id) : null;
+// ── 유저 폼 ──────────────────────────────────────────────────
+// 등록: POST /api/user { email, pass, name }
+// 수정: BE에 admin-edit-user 엔드포인트 없음 → 비밀번호/이름만 PATCH /api/user (본인 수정과 동일)
+function UserForm({ id, isEdit, list }) {
+  const navigate = useNavigate();
+  const [name, setName]   = useState('');
+  const [email, setEmail] = useState('');
+  const [pass, setPass]   = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  // edit 모드: GET /api/user/list에서 해당 유저 찾아 prefill
+  useEffect(() => {
+    if (!isEdit) return;
+    apiFetch('/api/user/list')
+      .then(r => r.json())
+      .then(j => {
+        const users = j.data ?? j;
+        const u = users.find(u => String(u.id) === String(id));
+        if (u) { setName(u.name ?? ''); setEmail(u.email ?? ''); }
+      })
+      .catch(() => {});
+  }, [id, isEdit]);
+
+  async function onSubmit(e) {
+    e.preventDefault();
+    setError('');
+    setSubmitting(true);
+    try {
+      let res;
+      if (isEdit) {
+        // 관리자가 다른 유저 수정하는 전용 API 없음 → 이름만 수정 가능
+        res = await apiFetch('/api/user', {
+          method: 'PATCH',
+          body: JSON.stringify({ name, ...(pass ? { pass } : {}) }),
+        });
+      } else {
+        res = await apiFetch('/api/user', {
+          method: 'POST',
+          body: JSON.stringify({ email, pass, name }),
+        });
+      }
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message ?? '저장 실패');
+      }
+      navigate(list);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
-    <FormShell
-      title="유저 정보" isEdit={isEdit} list="/admin/users" deletable
-      meta={u && [{ k: 'ID', v: u.id }, { k: '작성글', v: u.posts }, { k: '가입일', v: u.joined }]}
-    >
+    <FormShell title="유저 정보" isEdit={isEdit} list={list} onSubmit={onSubmit} submitting={submitting} error={error}>
       <Field label="이름 / 닉네임" required>
-        <TextInput value={u?.name} placeholder="닉네임" />
+        <TextInput value={name} onChange={e => setName(e.target.value)} placeholder="닉네임" />
       </Field>
-      <Field label="이메일" required>
-        <TextInput type="email" value={u?.email} placeholder="user@example.com" />
+      <Field label="이메일" required={!isEdit}>
+        <TextInput type="email" value={email} onChange={e => setEmail(e.target.value)}
+          placeholder="user@example.com" disabled={isEdit} />
       </Field>
-      <Field label="권한" required>
-        <Select value={u?.roleLabel ?? '일반'} options={['일반', '관리자', '정지']} />
-      </Field>
-      <Field label={isEdit ? '비밀번호 (변경 시에만)' : '초기 비밀번호'} required={!isEdit} hint="8자 이상, 영문+숫자">
-        <TextInput type="password" placeholder="••••••••" />
-      </Field>
-      <Field label="가입일">
-        <TextInput type="date" value={u?.joined ?? '2026-06-07'} />
-      </Field>
-      <Field label="상태 메모" full hint="관리자만 보이는 메모 (선택)">
-        <Textarea placeholder="예: 광고성 댓글로 1회 경고 (2026-06-01)" style={{ minHeight: 90 }} />
+      <Field label={isEdit ? '비밀번호 (변경 시에만)' : '비밀번호'} required={!isEdit} hint="8자 이상, 영문+숫자">
+        <TextInput type="password" value={pass} onChange={e => setPass(e.target.value)} placeholder="••••••••" />
       </Field>
     </FormShell>
   );
 }
 
-/* ───────── 산 ───────── */
-const PALETTES = ['forest', 'moss', 'alpine', 'dawn', 'dusk', 'mist'];
-function MountainForm({ id, isEdit }) {
-  const m = isEdit ? findMountain(id) : null;
+// ── 산 폼 ────────────────────────────────────────────────────
+// 등록: POST /api/mtn  { name, location, height }
+// 수정: PUT  /api/mtn/{id}
+function MountainForm({ id, isEdit, list }) {
+  const navigate = useNavigate();
+  const [name,     setName]     = useState('');
+  const [location, setLocation] = useState(REGION_NAMES[0]);
+  const [height,   setHeight]   = useState('');
+  const [description, setDescription] = useState(''); // TEXT NOT NULL
+  const [file,     setFile]     = useState(null); // 대표 이미지
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  // edit 모드: GET /api/mtn/{id}
+  useEffect(() => {
+    if (!isEdit) return;
+    apiFetch(`/api/mtn/${id}`)
+      .then(r => r.json())
+      .then(j => {
+        const m = j.data ?? j;
+        setName(m.name ?? '');
+        setLocation(m.location ?? REGION_NAMES[0]);
+        setHeight(m.height ?? '');
+        setDescription(m.description ?? '');
+      })
+      .catch(() => {});
+  }, [id, isEdit]);
+
+  async function onSubmit(e) {
+    e.preventDefault();
+    setError('');
+    setSubmitting(true);
+    try {
+      // 산 등록/수정은 multipart: @RequestPart Mtn mtn + @RequestPart(file) (이미지)
+      const mtn = isEdit
+        ? { id: Number(id), name, location, height: Number(height), description }
+        : { name, location, height: Number(height), description };
+      // ⚠ BE insert 가 file.getOriginalFilename() 을 null 체크 없이 호출 → 등록 시 이미지 필수
+      if (!isEdit && !file) {
+        setError('대표 이미지를 선택해주세요.');
+        setSubmitting(false);
+        return;
+      }
+      const fd = new FormData();
+      fd.append('mtn', new Blob([JSON.stringify(mtn)], { type: 'application/json' }));
+      if (file) fd.append('file', file);
+      const res = isEdit
+        ? await apiFetch(`/api/mtn/${id}`, { method: 'PUT',  body: fd })
+        : await apiFetch('/api/mtn',        { method: 'POST', body: fd });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error ?? err.message ?? '저장 실패');
+      }
+      navigate(list);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return (
-    <FormShell
-      title="산 정보" isEdit={isEdit} list="/admin/mountains" deletable
-      meta={m && [{ k: 'ID', v: m.id }, { k: '경로 수', v: m.routes }, { k: '수정일', v: m.updated }]}
-    >
+    <FormShell title="산 정보" isEdit={isEdit} list={list} onSubmit={onSubmit} submitting={submitting} error={error}>
       <Field label="산 이름" required>
-        <TextInput value={m?.name} placeholder="예: 북한산" />
-      </Field>
-      <Field label="한자 / 영문">
-        <TextInput placeholder="예: 北漢山" />
+        <TextInput value={name} onChange={e => setName(e.target.value)} placeholder="예: 북한산" maxLength={50} />
       </Field>
       <Field label="지역" required>
-        <Select value={REGION_NAMES[0]} options={REGION_NAMES} />
+        <Select value={location} options={REGION_NAMES} onChange={e => setLocation(e.target.value)} />
       </Field>
-      <Field label="상세 지역">
-        <TextInput value={m?.region} placeholder="예: 서울 강북" />
+      <Field label="최고 고도 (m)" required>
+        <TextInput type="number" value={height} onChange={e => setHeight(e.target.value)} placeholder="836" />
       </Field>
-      <Field label="최고 고도" required>
-        <UnitInput value={m?.ele} unit="m" type="number" placeholder="836" />
+      <Field label="설명" required hint="산 소개 (상세페이지에 표시)">
+        <textarea className="inp" style={{ minHeight: 96 }} value={description}
+          onChange={e => setDescription(e.target.value)} placeholder="예: 서울 도심에서 가장 가까운 국립공원으로…" />
       </Field>
-      <Field label="대표 난이도" required>
-        <Segmented options={['초급', '중급', '상급']} />
-      </Field>
-      <Field label="공개 상태" required>
-        <Segmented options={['공개', '검수중', '비공개']} value={m?.status ?? '검수중'} green />
-      </Field>
-      <Field label="대표 풍경 팔레트" hint="목록/상세의 산 이미지 색감">
-        <Select value={PALETTES[0]} options={PALETTES} />
-      </Field>
-      <Field label="대표 이미지 미리보기" full>
-        <div className="scene-preview">
-          <MountainScene variant={isEdit ? Number(String(id).replace(/\D/g, '')) || 7 : 7} palette="forest" w={820} h={150} />
-        </div>
-      </Field>
-      <Field label="소개" full hint="상세페이지 설명문">
-        <Textarea placeholder="능선 조망이 뛰어난 대표 명산..." style={{ minHeight: 120 }} />
+      <Field label="대표 이미지" required={!isEdit} hint={isEdit ? '변경할 때만 선택' : 'JPG / PNG · 등록 시 필수'}>
+        <input type="file" accept="image/*" onChange={e => setFile(e.target.files?.[0] ?? null)} />
       </Field>
     </FormShell>
   );
 }
 
-/* ───────── 경로 ───────── */
-function RouteForm({ id, isEdit }) {
-  const r = isEdit ? findRoute(id) : null;
+// ── 경로 폼 ──────────────────────────────────────────────────
+// 등록: POST /api/track { mountainId, name, gpxFilePath }
+// 수정: PUT  /api/track { id, mountainId, name, gpxFilePath }
+function RouteForm({ id, isEdit, list }) {
+  const navigate = useNavigate();
+  const [mountains,   setMountains]   = useState([]);
+  const [mountainId,  setMountainId]  = useState('');
+  const [name,        setName]        = useState('');
+  const [gpxFilePath, setGpxFilePath] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  // 산 목록 조회 (소속 산 선택용)
+  useEffect(() => {
+    apiFetch('/api/mtn/list')
+      .then(r => r.json())
+      .then(j => {
+        const list = j.data ?? j;
+        setMountains(list);
+        if (!isEdit && list.length > 0) setMountainId(String(list[0].id));
+      })
+      .catch(() => {});
+  }, [isEdit]);
+
+  // edit 모드: GET /api/track/{id}
+  useEffect(() => {
+    if (!isEdit) return;
+    apiFetch(`/api/track/${id}`)
+      .then(r => r.json())
+      .then(j => {
+        const t = j.data ?? j;
+        setMountainId(String(t.mountainId ?? ''));
+        setName(t.name ?? '');
+        setGpxFilePath(t.gpxFilePath ?? '');
+      })
+      .catch(() => {});
+  }, [id, isEdit]);
+
+  async function onSubmit(e) {
+    e.preventDefault();
+    setError('');
+    setSubmitting(true);
+    try {
+      const body = { mountainId: Number(mountainId), name, gpxFilePath: gpxFilePath || null };
+      const res = isEdit
+        ? await apiFetch('/api/track', { method: 'PUT',  body: JSON.stringify({ ...body, id: Number(id) }) })
+        : await apiFetch('/api/track', { method: 'POST', body: JSON.stringify(body) });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.message ?? '저장 실패');
+      }
+      navigate(list);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  const mtnOptions = mountains.map(m => m.name);
+  const selectedMtn = mountains.find(m => String(m.id) === mountainId)?.name ?? '';
+
   return (
-    <FormShell
-      title="경로 정보" isEdit={isEdit} list="/admin/routes" deletable
-      meta={r && [{ k: 'ID', v: r.id }, { k: '소속 산', v: r.mountain }, { k: '상태', v: r.status }]}
-    >
+    <FormShell title="경로 정보" isEdit={isEdit} list={list} onSubmit={onSubmit} submitting={submitting} error={error}>
       <Field label="소속 산" required>
-        <Select value={r?.mountain ?? MOUNTAIN_NAMES[0]} options={MOUNTAIN_NAMES} />
+        <Select
+          value={selectedMtn}
+          options={mtnOptions}
+          onChange={e => {
+            const m = mountains.find(m => m.name === e.target.value);
+            if (m) setMountainId(String(m.id));
+          }}
+        />
       </Field>
       <Field label="경로명" required>
-        <TextInput value={r?.name} placeholder="예: 백운대 정규 코스" />
+        <TextInput value={name} onChange={e => setName(e.target.value)} placeholder="예: 백운대 정규 코스" />
       </Field>
-      <Field label="코스 유형" required>
-        <Segmented options={['원점회귀', '편도', '종주']} />
-      </Field>
-      <Field label="난이도" required>
-        <Segmented options={['초급', '중급', '상급']} value={r?.lv} />
-      </Field>
-      <Field label="거리" required>
-        <UnitInput value={r ? parseFloat(r.dist) : ''} unit="km" type="number" placeholder="5.2" />
-      </Field>
-      <Field label="예상 소요">
-        <UnitInput unit="시간" type="number" placeholder="3" />
-      </Field>
-      <Field label="최고 고도">
-        <UnitInput unit="m" type="number" placeholder="836" />
-      </Field>
-      <Field label="누적 상승">
-        <UnitInput unit="m" type="number" placeholder="1100" />
-      </Field>
-      <Field label="공개 상태" required>
-        <Segmented options={['공개', '검수중', '비공개']} value={r?.status ?? '검수중'} green />
-      </Field>
-      <Field label="GPX 파일" full hint=".gpx · 트랙 포인트가 지도/고도 그래프로 변환됩니다">
-        <Dropzone icon="🗺" title={r?.gpx === '있음' ? '등록된 GPX 교체하기' : 'GPX 파일 업로드'} sub=".gpx 형식만 지원" />
-      </Field>
-      <Field label="경유지 메모" full hint="줄바꿈으로 구분 (예: 탐방지원센터, 약수터, 정상...)">
-        <Textarea placeholder={'탐방지원센터 (출발)\n약수터\n백운대 정상\n전망 바위\n탐방지원센터 (도착)'} style={{ minHeight: 120 }} />
+      <Field label="GPX 파일 경로" hint="서버 저장 경로 또는 URL">
+        <TextInput value={gpxFilePath} onChange={e => setGpxFilePath(e.target.value)} placeholder="/gpx/bukhansan_1.gpx" />
       </Field>
     </FormShell>
   );

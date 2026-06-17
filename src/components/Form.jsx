@@ -12,20 +12,26 @@ export function Field({ label, required, hint, full, children }) {
   );
 }
 
-export function TextInput({ value, ...rest }) {
+// onChange 가 있으면 controlled(value), 없으면 uncontrolled(defaultValue)
+export function TextInput({ value, onChange, ...rest }) {
+  if (onChange) return <input className="inp" value={value ?? ''} onChange={onChange} {...rest} />;
   return <input className="inp" defaultValue={value} {...rest} />;
 }
 
-export function Textarea({ value, tall, ...rest }) {
+export function Textarea({ value, onChange, tall, ...rest }) {
+  if (onChange) return <textarea className={'inp' + (tall ? ' tall' : '')} value={value ?? ''} onChange={onChange} {...rest} />;
   return <textarea className={'inp' + (tall ? ' tall' : '')} defaultValue={value} {...rest} />;
 }
 
-export function Select({ value, options, ...rest }) {
+export function Select({ value, onChange, options, ...rest }) {
+  if (onChange) return (
+    <select className="inp" value={value ?? options[0]} onChange={onChange} {...rest}>
+      {options.map((o) => <option key={o} value={o}>{o}</option>)}
+    </select>
+  );
   return (
     <select className="inp" defaultValue={value} {...rest}>
-      {options.map((o) => (
-        <option key={o} value={o}>{o}</option>
-      ))}
+      {options.map((o) => <option key={o} value={o}>{o}</option>)}
     </select>
   );
 }

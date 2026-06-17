@@ -1,0 +1,124 @@
+/* ═══════════════════════════════════════════════════════════════
+   detail-map.css — 산 상세 (지도 중심 풀스크린 앱 레이아웃)
+   좌: 정보·후기 / 중앙: OSM 지도 + 코스·날씨 카드 / 우: AI 어시스턴트(플로팅)
+   ═══════════════════════════════════════════════════════════════ */
+
+.md { position: relative; display: flex; width: min(1380px, calc(100vw - 48px)); margin: 22px auto; height: calc(100vh - 128px); min-height: 520px; overflow: hidden; background: var(--card); border: 2.5px solid var(--ink); border-radius: 18px; box-shadow: 6px 6px 0 var(--ink); z-index: 2; }
+
+/* ── 좌측 패널 ── */
+.md-left { width: 384px; flex-shrink: 0; height: 100%; overflow-y: auto; border-right: 2.5px solid var(--ink); background: var(--card); }
+.md-hero { position: relative; height: 196px; border-bottom: 2.5px solid var(--ink); overflow: hidden; }
+.md-hero .scene { position: absolute; inset: 0; }
+.md-hero .ht { position: absolute; inset: 0; background-image: radial-gradient(#14201a 1px, transparent 1.2px); background-size: 6px 6px; opacity: 0.1; mix-blend-mode: multiply; }
+.md-hero .veil { position: absolute; inset: 0; background: linear-gradient(to top, rgba(15,32,26,0.82), rgba(15,32,26,0.05) 62%); }
+.md-hero .hbody { position: absolute; left: 18px; right: 18px; bottom: 14px; z-index: 2; color: var(--paper); }
+.md-hero .heyebrow { font-family: var(--font-mono); font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; opacity: 0.9; }
+.md-hero h1 { font-family: var(--font-disp); font-weight: 400; font-size: 38px; line-height: 1; letter-spacing: -1px; margin-top: 2px; }
+.md-hero .ele-badge { position: absolute; top: 14px; right: 14px; z-index: 2; font-family: var(--font-mono); font-size: 12px; font-weight: 700; background: var(--paper); color: var(--ink); border: 2px solid var(--ink); border-radius: 8px; padding: 4px 9px; box-shadow: 2px 2px 0 var(--ink); }
+
+.md-sec { padding: 18px 20px; border-bottom: 1.5px dashed var(--line); }
+.md-desc { font-size: 14px; line-height: 1.75; color: var(--ink-2); }
+.md-label { font-family: var(--font-mono); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink-soft); margin-bottom: 8px; }
+
+.md-reviews-head { display: flex; align-items: flex-end; justify-content: space-between; }
+.md-reviews-head .t { font-family: var(--font-mono); font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--ink-soft); }
+.md-reviews-head .n { font-family: var(--font-disp); font-weight: 400; font-size: 22px; line-height: 1; }
+.md-reviews-head .cmt { color: var(--pop); font-size: 18px; }
+
+.review-item { padding: 16px 0; border-bottom: 1.5px dashed var(--line); }
+.review-item:last-child { border-bottom: none; }
+.review-item .rtop { display: flex; align-items: center; gap: 10px; }
+.review-item .rav { width: 32px; height: 32px; border-radius: 50%; border: 2px solid var(--ink); background: var(--sky); display: grid; place-items: center; font-weight: 800; font-size: 13px; flex-shrink: 0; }
+.review-item .rwho { font-weight: 800; font-size: 14px; }
+.review-item .rdate { font-family: var(--font-mono); font-size: 11px; color: var(--ink-soft); margin-left: auto; }
+.review-item .rbody { font-size: 14px; line-height: 1.65; color: var(--ink-2); margin-top: 9px; }
+.review-item .rphotos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.review-item .rphoto { position: relative; height: 86px; border: 2px solid var(--ink); border-radius: 8px; overflow: hidden; }
+.review-item .rphoto .scene { position: absolute; inset: 0; }
+
+/* 트랙별 댓글 */
+.cmt-track-label { font-family: var(--font-mono); font-size: 11px; color: var(--forest-deep); background: var(--sky); border: 1.5px solid var(--forest-deep); border-radius: 999px; padding: 3px 11px; display: inline-block; margin: 4px 0 14px; }
+.md-cmt-form { display: flex; flex-direction: column; gap: 8px; border: 2px solid var(--ink); border-radius: 12px; background: var(--paper); padding: 12px; margin-bottom: 16px; }
+.md-cmt-form textarea { width: 100%; border: 2px solid var(--ink); border-radius: 9px; background: var(--card); font-family: var(--font-body); font-size: 14px; line-height: 1.5; padding: 9px; outline: none; resize: vertical; min-height: 52px; }
+.md-cmt-form textarea:focus { border-color: var(--pop); box-shadow: 2px 2px 0 var(--pop); }
+.md-cmt-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cmt-file { font-family: var(--font-mono); font-size: 12px; border: 1.5px solid var(--ink); background: var(--card); border-radius: 8px; padding: 5px 10px; cursor: pointer; box-shadow: 1.5px 1.5px 0 var(--ink); }
+.cmt-file:hover { background: var(--sky); }
+.review-item .rphoto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.md-cmt-login { font-size: 13px; color: var(--ink-soft); margin-bottom: 14px; }
+.md-cmt-login a { color: var(--pop); font-weight: 700; }
+.md-cmt-empty { font-size: 13.5px; color: var(--ink-soft); padding: 12px 0; }
+.cmt-del { margin-left: auto; border: 1.5px solid var(--line); background: var(--paper); border-radius: 6px; padding: 2px 8px; font-family: var(--font-mono); font-size: 10px; color: var(--ink-soft); cursor: pointer; }
+.cmt-del:hover { border-color: var(--pop); color: var(--pop); }
+
+/* ── 중앙 지도 ── */
+.md-map { position: relative; flex: 1; min-width: 0; height: 100%; }
+.md-iframe { width: 100%; height: 100%; border: 0; display: block; }
+
+/* 코스 + 날씨 플로팅 카드 (하단 중앙) */
+.md-course-card { position: absolute; left: 28px; bottom: 24px; width: 380px; max-width: calc(100% - 56px); background: var(--card); border: 2.5px solid var(--ink); border-radius: 16px; box-shadow: 5px 5px 0 var(--ink); padding: 16px 18px; z-index: 20; }
+.cc-eyebrow { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--forest); display: flex; align-items: center; gap: 6px; }
+.cc-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-top: 4px; }
+.cc-title { font-family: var(--font-disp); font-weight: 400; font-size: 22px; letter-spacing: -0.5px; line-height: 1.05; }
+.cc-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.cc-actions .ic { width: 32px; height: 32px; border: 2px solid var(--ink); border-radius: 8px; background: var(--paper); display: grid; place-items: center; cursor: pointer; font-size: 14px; box-shadow: 1.5px 1.5px 0 var(--ink); }
+.cc-actions .ic:hover { background: var(--sky); }
+.cc-actions .ic.on { background: var(--pop); color: #fff; border-color: var(--pop); }
+.cc-save { border: 2px solid var(--ink); border-radius: 8px; background: var(--paper); color: var(--ink); font-family: var(--font-body); font-weight: 800; font-size: 13px; padding: 0 12px; height: 32px; cursor: pointer; box-shadow: 1.5px 1.5px 0 var(--ink); white-space: nowrap; transition: transform .08s, box-shadow .08s; }
+.cc-save:hover { background: var(--gold); }
+.cc-save:active { transform: translate(1.5px,1.5px); box-shadow: 0 0 0 var(--ink); }
+.cc-save.on { background: var(--pop); color: #fff; border-color: var(--pop); }
+.cc-meta { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.cc-meta .k { font-family: var(--font-mono); font-size: 11px; color: var(--ink-soft); }
+.cc-meta .ele { font-family: var(--font-disp); font-size: 14px; background: var(--forest); color: #fff; border: 2px solid var(--ink); border-radius: 7px; padding: 2px 9px; box-shadow: 1.5px 1.5px 0 var(--ink); }
+.cc-meta .like { margin-left: auto; font-family: var(--font-mono); font-size: 12px; color: var(--pop-deep); font-weight: 700; }
+
+.cc-wx-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink-soft); margin: 14px 0 7px; display: flex; align-items: center; gap: 6px; }
+.wx-empty { font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft); padding: 8px 0; }
+.wx-days { display: flex; gap: 5px; }
+.wx-day { flex: 1; border: 1.5px solid var(--line); border-radius: 9px; text-align: center; padding: 7px 2px; cursor: pointer; background: var(--paper); }
+.wx-day:hover { border-color: var(--ink); }
+.wx-day.on { background: var(--forest); border-color: var(--ink); color: #fff; box-shadow: 2px 2px 0 var(--ink); }
+.wx-day .wd { font-family: var(--font-mono); font-size: 10px; }
+.wx-day .we { font-size: 16px; line-height: 1.3; }
+.wx-day .wt { font-weight: 800; font-size: 12px; }
+.wx-summary { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding-top: 12px; border-top: 1.5px dashed var(--line); }
+.wx-summary .big { font-size: 28px; line-height: 1; }
+.wx-summary .now { display: flex; flex-direction: column; }
+.wx-summary .now b { font-family: var(--font-disp); font-weight: 400; font-size: 18px; line-height: 1; }
+.wx-summary .now span { font-family: var(--font-mono); font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
+.wx-summary .extra { margin-left: auto; display: grid; grid-template-columns: auto auto; gap: 2px 12px; font-family: var(--font-mono); font-size: 11px; color: var(--ink-soft); }
+
+/* ── 우측 AI 어시스턴트 (플로팅) ── */
+.md-ai { position: absolute; top: 20px; right: 20px; width: 340px; max-height: calc(100% - 40px); display: flex; flex-direction: column; background: var(--card); border: 2.5px solid var(--ink); border-radius: 16px; box-shadow: 5px 5px 0 var(--ink); overflow: hidden; z-index: 30; }
+.ai-head { display: flex; align-items: center; gap: 10px; padding: 13px 15px; background: var(--forest); color: var(--paper); border-bottom: 2.5px solid var(--ink); }
+.ai-head .ai-av { width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--paper); display: grid; place-items: center; font-size: 17px; flex-shrink: 0; }
+.ai-head .ai-t b { font-family: var(--font-disp); font-weight: 400; font-size: 17px; line-height: 1; display: block; }
+.ai-head .ai-t span { font-family: var(--font-mono); font-size: 9px; letter-spacing: 1.5px; opacity: 0.85; }
+.ai-head .ai-x { margin-left: auto; width: 28px; height: 28px; border-radius: 7px; border: none; background: rgba(255,255,255,0.15); color: #fff; cursor: pointer; font-size: 16px; line-height: 1; }
+.ai-head .ai-x:hover { background: rgba(255,255,255,0.3); }
+.ai-body { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 12px; min-height: 180px; }
+.ai-msg { max-width: 88%; padding: 10px 13px; font-size: 13.5px; line-height: 1.6; border: 2px solid var(--ink); border-radius: 12px; box-shadow: 2px 2px 0 var(--ink); }
+.ai-msg.bot { align-self: flex-start; background: var(--paper); border-bottom-left-radius: 3px; }
+.ai-msg.user { align-self: flex-end; background: var(--pop); color: #fff; border-color: var(--pop); border-bottom-right-radius: 3px; }
+.ai-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 14px 12px; }
+.ai-chips .chip { font-size: 12.5px; padding: 4px 11px; }
+.ai-input { display: flex; gap: 8px; padding: 12px 14px; border-top: 2px solid var(--ink); background: var(--paper-2); }
+.ai-input input { flex: 1; border: 2px solid var(--ink); border-radius: 9px; background: var(--paper); padding: 9px 12px; font-family: var(--font-body); font-size: 13.5px; outline: none; min-width: 0; }
+.ai-input .send { width: 40px; flex-shrink: 0; border: 2px solid var(--ink); border-radius: 9px; background: var(--pop); color: #fff; cursor: pointer; font-size: 15px; box-shadow: 2px 2px 0 var(--ink); }
+.ai-input .send:active { transform: translate(2px,2px); box-shadow: 0 0 0 var(--ink); }
+
+/* AI 다시 열기 FAB */
+.md-ai-fab { position: absolute; right: 22px; bottom: 24px; width: 54px; height: 54px; border-radius: 50%; border: 2.5px solid var(--ink); background: var(--forest); color: #fff; cursor: pointer; font-size: 22px; box-shadow: 4px 4px 0 var(--ink); z-index: 30; display: grid; place-items: center; }
+.md-ai-fab:active { transform: translate(2px,2px); box-shadow: 2px 2px 0 var(--ink); }
+
+@media (max-width: 1100px) {
+  .md-ai { width: 320px; }
+}
+@media (max-width: 900px) {
+  .md { flex-direction: column; height: auto; overflow: visible; }
+  .md-left { width: 100%; height: auto; max-height: none; border-right: none; border-bottom: 2.5px solid var(--ink); }
+  .md-map { height: 70vh; }
+  .md-course-card { width: calc(100% - 40px); left: 20px; }
+  .md-ai { width: min(340px, calc(100% - 40px)); }
+}

@@ -1,18 +1,38 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import MountainScene from '../components/MountainScene.jsx';
 import MountainCard from '../components/MountainCard.jsx';
-import { MOUNTAINS, REGIONS, FEATURED } from '../data/mountains.js';
-import { FREE_POSTS } from '../data/posts.js';
+import { REGIONS, mtnToCard } from '../data/mountains.js';
+import { apiFetch } from '../context/AuthContext.jsx';
 
 const QUICK = ['북한산', '관악산', '서울 근교', '당일치기', '초보 코스'];
+
+// 'YYYY-MM-DD…' / 'YYYY.MM.DD' → 'MM.DD'
+const fmtDate = (s) => (s ? String(s).replace(/[-/]/g, '.').slice(5, 10) : '');
 
 export default function MainPage() {
   const navigate = useNavigate();
   const [q, setQ] = useState('');
-  // TODO(BE): 인기 산/이달의 산 데이터 — GET /api/mtn/list (필요시 추천순 정렬).
-  //   useEffect 로 호출 후 setState → 아래 MOUNTAINS/FEATURED 더미를 응답으로 교체.
-  //   커뮤니티 미리보기는 GET /api/board?category=FREE (최신 5건).
+
+  // 자유게시판 최신 글 미리보기 — GET /api/board?category=free
+  const [freePosts, setFreePosts] = useState([]);
+  useEffect(() => {
+    apiFetch('/api/board?category=free')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => { if (json) setFreePosts(json.data ?? json); })
+      .catch(() => {});
+  }, []);
+
+  // 산 목록 — GET /api/mtn/list (이달의 산 = 첫 항목, 인기 산 = 앞 8개)
+  const [mtns, setMtns] = useState([]);
+  useEffect(() => {
+    apiFetch('/api/mtn/list')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => { if (json) setMtns(json.data ?? json); })
+      .catch(() => {});
+  }, []);
+  const featured = mtns[0];
+
   const onSearch = (e) => {
     e.preventDefault();
     // TODO(BE): 검색 — 결과 페이지에서 GET /api/track/search?name= 또는 GET /api/board?keyword= 호출
@@ -69,26 +89,26 @@ export default function MainPage() {
           <Link className="more" to="/mountains">전체 산 목록 →</Link>
         </div>
 
-        <Link className="feature" to={`/mountains/${FEATURED.id}`}>
-          <MountainScene variant={5} palette={FEATURED.pal} w={1180} h={340} />
-          <div className="ht" />
-          <div className="veil" />
-          <div className="body">
-            <div className="tagrow">
-              <span className="ftag">이달의 산</span>
-              <span className="ftag alt">단풍 절정</span>
+        {featured && (
+          <Link className="feature" to={`/mountains/${featured.id}`}>
+            <MountainScene variant={5} palette={mtnToCard(featured).pal} w={1180} h={340} />
+            <div className="ht" />
+            <div className="veil" />
+            <div className="body">
+              <div className="tagrow">
+                <span className="ftag">이달의 산</span>
+                <span className="ftag alt">추천 코스</span>
+              </div>
+              <h3>{featured.name}</h3>
+              <div className="region">📍 {featured.location} · 고도 {featured.height}m</div>
+              <div className="specs">
+                <div className="s"><div className="k">고도</div><div className="v">{featured.height}m</div></div>
+                <div className="s"><div className="k">위치</div><div className="v">{featured.location}</div></div>
+              </div>
+              <span className="btn pop cta">코스 상세 보기 →</span>
             </div>
-            <h3>{FEATURED.name}<br />{FEATURED.sub}</h3>
-            <div className="region">📍 {FEATURED.region} · GPX {FEATURED.gpx}</div>
-            <div className="specs">
-              <div className="s"><div className="k">거리</div><div className="v">{FEATURED.dist}</div></div>
-              <div className="s"><div className="k">소요</div><div className="v">{FEATURED.time}</div></div>
-              <div className="s"><div className="k">난이도</div><div className="v">{FEATURED.lv}</div></div>
-              <div className="s"><div className="k">고도</div><div className="v">{FEATURED.ele}</div></div>
-            </div>
-            <span className="btn pop cta">코스 상세 보기 →</span>
-          </div>
-        </Link>
+          </Link>
+        )}
       </section>
 
       {/* ───── 인기 산 TOP 8 ───── */}
@@ -102,8 +122,8 @@ export default function MainPage() {
           <Link className="more" to="/mountains">더 보기 →</Link>
         </div>
         <div className="grid">
-          {MOUNTAINS.slice(0, 8).map((m, i) => (
-            <MountainCard key={m.id} m={m} sceneVariant={i + 11} />
+          {mtns.slice(0, 8).map((m, i) => (
+            <MountainCard key={m.id} m={{ ...mtnToCard(m), rank: i + 1 }} sceneVariant={i + 11} />
           ))}
         </div>
       </section>
@@ -114,16 +134,20 @@ export default function MainPage() {
           <div className="panel">
             <div className="ph">
               <h3>자유게시판</h3>
-              <span className="mono">실시간 인기글</span>
+              <Link className="mono" to="/board" style={{ textDecoration: 'none', color: 'var(--ink-soft)' }}>최신 글 전체 →</Link>
             </div>
-            {FREE_POSTS.slice(0, 5).map((p) => (
-              <Link key={p.id} className="post" to="/board">
-                <span className={'tg' + (p.tag === '후기' ? ' review' : p.tag === '질문' ? ' q' : '')}>{p.tag}</span>
-                <span className="tt">{p.title}</span>
-                <span className="cm">💬{p.cm}</span>
-                <span className="ti">{p.time}</span>
-              </Link>
-            ))}
+            {freePosts.length === 0 ? (
+              <div className="post" style={{ justifyContent: 'center', color: 'var(--ink-soft)' }}>아직 등록된 글이 없어요</div>
+            ) : (
+              freePosts.slice(0, 5).map((p) => (
+                <Link key={p.id} className="post" to={`/board/${p.id}`}>
+                  <span className="tg">자유</span>
+                  <span className="tt">{p.title}</span>
+                  <span className="cm">💬{p.commentCount}</span>
+                  <span className="ti">{fmtDate(p.createdAt)}</span>
+                </Link>
+              ))
+            )}
           </div>
 
           <div className="panel">

@@ -1,21 +1,69 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import MountainCard from '../components/MountainCard.jsx';
-import { MOUNTAINS, REGIONS } from '../data/mountains.js';
+import { REGIONS } from '../data/mountains.js';
+import { apiFetch } from '../context/AuthContext.jsx';
 
+const PALETTES = ['forest', 'moss', 'alpine', 'dusk', 'mist', 'dawn'];
 const DIFFS = ['전체', '초급', '중급', '상급'];
 const DISTS = ['전체', '5km 이하', '5~10km', '10km 이상'];
 const SORTS = ['인기순', '최신순', '거리순', '난이도순'];
 
+// BE Mtn → FE 카드 포맷 변환
+// dist·time·lv 는 Track API 데이터라 지금은 '-' 로 표시
+function toCard(mtn, index) {
+  return {
+    id:     mtn.id,
+    rank:   index + 1,
+    name:   mtn.name,
+    region: mtn.location ?? '-',
+    ele:    mtn.height  ?? 0,
+    dist:   '-',
+    time:   '-',
+    lv:     '-',
+    lvN:    0,
+    pal:    PALETTES[index % PALETTES.length],
+  };
+}
+
 export default function MountainListPage() {
-  const [region, setRegion] = useState('전체');
-  const [diff, setDiff] = useState('전체');
-  const [dist, setDist] = useState('전체');
-  const [sort, setSort] = useState('인기순');
-  // TODO(BE): 산 목록 — GET /api/mtn/list 로 받아 MOUNTAINS 더미 교체.
-  //   지역/난이도/거리 필터·정렬은 (a) 받아온 목록을 클라이언트에서 거르거나
-  //   (b) 경로 기준이면 GET /api/track?mtnName=&location=&height= (TrackCondition) 사용.
-  //   region/diff/dist/sort state 가 바뀔 때마다 재조회 또는 재필터.
+  const [mountains, setMountains] = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [error, setError]         = useState('');
+
+  const [keyword, setKeyword] = useState('');
+  const [region, setRegion]   = useState('전체');
+  const [diff, setDiff]       = useState('전체');
+  const [dist, setDist]       = useState('전체');
+  const [sort, setSort]       = useState('인기순');
+
+  // ── API 호출 ──────────────────────────────────────────────
+  // useEffect: 컴포넌트가 처음 마운트될 때 한 번 실행
+  useEffect(() => {
+    apiFetch('/api/mtn/list')
+      .then((res) => {
+        if (!res.ok) throw new Error('산 목록을 불러오지 못했습니다.');
+        return res.json();
+      })
+      .then((json) => {
+        // ApiResult 래퍼: { success, data: [...] } 또는 그냥 배열
+        const list = json.data ?? json;
+        setMountains(list.map(toCard));
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
+  }, []); // [] = 의존성 없음 → 마운트 1회만 실행
+
+  // ── 클라이언트 필터링 ─────────────────────────────────────
+  // useMemo: mountains·필터 state가 바뀔 때만 재계산 (불필요한 연산 방지)
+  const filtered = useMemo(() => {
+    return mountains.filter((m) => {
+      if (keyword && !m.name.includes(keyword)) return false;
+      if (region !== '전체' && !m.region.includes(region)) return false;
+      return true;
+      // diff·dist 필터는 Track 데이터 연동 후 추가 예정
+    });
+  }, [mountains, keyword, region]);
 
   return (
     <div className="wrap">
@@ -24,7 +72,7 @@ export default function MountainListPage() {
       </div>
 
       <div className="page-head">
-        <div className="eyebrow">ALL MOUNTAINS · 369 COURSES</div>
+        <div className="eyebrow">ALL MOUNTAINS</div>
         <h1>산 목록</h1>
         <p className="desc">지역·난이도·거리로 좁혀가며 나에게 맞는 등산 코스를 찾아보세요.</p>
       </div>
@@ -35,7 +83,11 @@ export default function MountainListPage() {
           <span className="flab">검색</span>
           <div className="search-mini">
             <span>🔍</span>
-            <input placeholder="산 이름으로 검색 (예: 북한산)" />
+            <input
+              placeholder="산 이름으로 검색 (예: 북한산)"
+              value={keyword}
+              onChange={(e) => setKeyword(e.target.value)}
+            />
           </div>
         </div>
         <div className="frow">
@@ -59,7 +111,7 @@ export default function MountainListPage() {
 
       {/* 정렬 / 개수 */}
       <div className="list-toolbar">
-        <div className="count"><b>{MOUNTAINS.length}</b> 개의 산</div>
+        <div className="count"><b>{filtered.length}</b> 개의 산</div>
         <div className="sort-pills">
           {SORTS.map((s) => (
             <span key={s} className={'chip' + (sort === s ? ' on' : '')} onClick={() => setSort(s)}>{s}</span>
@@ -67,12 +119,18 @@ export default function MountainListPage() {
         </div>
       </div>
 
+      {/* 상태 표시 */}
+      {loading && <p style={{ textAlign: 'center', padding: 40 }}>불러오는 중…</p>}
+      {error   && <p style={{ textAlign: 'center', padding: 40, color: 'var(--pop)' }}>{error}</p>}
+
       {/* 카드 그리드 */}
-      <div className="grid" style={{ marginBottom: 10 }}>
-        {MOUNTAINS.map((m, i) => (
-          <MountainCard key={m.id} m={m} sceneVariant={i + 21} showRank={false} />
-        ))}
-      </div>
+      {!loading && !error && (
+        <div className="grid" style={{ marginBottom: 10 }}>
+          {filtered.map((m, i) => (
+            <MountainCard key={m.id} m={m} sceneVariant={i + 21} showRank={false} />
+          ))}
+        </div>
+      )}
 
       {/* 페이지네이션 */}
       <div className="pagination">

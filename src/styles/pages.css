@@ -181,8 +181,8 @@
 .board-toolbar .search-mini input { border: none; outline: none; background: transparent; font-family: var(--font-body); font-size: 14px; width: 150px; }
 
 .board-table { border: 2.5px solid var(--ink); border-radius: 14px; overflow: hidden; background: var(--card); box-shadow: 5px 5px 0 var(--ink); }
-.board-table .thead { display: grid; grid-template-columns: 70px 1fr 110px 90px 60px 60px; gap: 12px; padding: 12px 20px; background: var(--paper-2); border-bottom: 2.5px solid var(--ink); font-family: var(--font-mono); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink-soft); }
-.board-row { display: grid; grid-template-columns: 70px 1fr 110px 90px 60px 60px; gap: 12px; padding: 14px 20px; border-bottom: 1.5px dashed var(--line); text-decoration: none; color: inherit; align-items: center; }
+.board-table .thead { display: grid; grid-template-columns: 100px 1fr 130px 60px; gap: 12px; padding: 12px 20px; background: var(--paper-2); border-bottom: 2.5px solid var(--ink); font-family: var(--font-mono); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink-soft); }
+.board-row { display: grid; grid-template-columns: 100px 1fr 130px 60px; gap: 12px; padding: 14px 20px; border-bottom: 1.5px dashed var(--line); text-decoration: none; color: inherit; align-items: center; }
 .board-row:last-child { border-bottom: none; }
 .board-row:hover { background: var(--paper-2); }
 .board-row .b-tag { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; border: 1.5px solid var(--ink); border-radius: 5px; padding: 2px 7px; text-align: center; white-space: nowrap; }
@@ -243,6 +243,46 @@
 .faq .q::before { content: "Q"; color: var(--pop); font-family: var(--font-disp); }
 .faq .a { font-size: 14px; color: var(--ink-2); margin-top: 7px; line-height: 1.6; padding-left: 20px; }
 @media (max-width: 900px) { .guide-grid { grid-template-columns: 1fr; } .guide-toc { display: none; } }
+
+/* ═══════════ 게시글 상세 ═══════════ */
+.post-card, .comment-section { max-width: 860px; margin-left: auto; margin-right: auto; position: relative; z-index: 2; }
+
+.post-card { border: 2.5px solid var(--ink); border-radius: 16px; background: var(--card); box-shadow: 5px 5px 0 var(--ink); padding: 26px 30px; margin-top: 12px; }
+.post-header { border-bottom: 2px dashed var(--line); padding-bottom: 16px; margin-bottom: 20px; }
+.post-meta-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.post-author { font-weight: 800; font-size: 14px; }
+.post-author::before { content: "👤 "; }
+.post-date { font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft); }
+.post-meta-row .post-date { margin-left: auto; }
+.post-title { font-family: var(--font-disp); font-weight: 400; font-size: clamp(28px, 4vw, 40px); line-height: 1.1; letter-spacing: -0.5px; margin-top: 14px; }
+
+.post-image { margin-bottom: 20px; border: 2px solid var(--ink); border-radius: 12px; overflow: hidden; box-shadow: 3px 3px 0 var(--ink); }
+.post-image img { display: block; }
+
+.post-body { font-size: 16px; line-height: 1.85; color: var(--ink-2); white-space: pre-wrap; word-break: keep-all; min-height: 80px; }
+
+.post-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 24px; padding-top: 18px; border-top: 2px dashed var(--line); }
+.btn.danger { background: var(--card); color: var(--pop-deep); }
+.btn.danger:hover { background: var(--pop); color: #fff; border-color: var(--pop); }
+
+/* 댓글 */
+.comment-section { margin-top: 28px; margin-bottom: 50px; }
+.comment-heading { font-family: var(--font-disp); font-weight: 400; font-size: 24px; padding-bottom: 12px; border-bottom: 2.5px solid var(--ink); }
+.comment-heading::before { content: "💬 "; }
+
+.comment-item { padding: 16px 0; border-bottom: 1.5px dashed var(--line); }
+.comment-top { display: flex; align-items: center; gap: 10px; }
+.comment-author { font-weight: 800; font-size: 14px; display: flex; align-items: center; gap: 7px; }
+.comment-author::before { content: ""; width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--ink); background: var(--sky); display: inline-block; flex-shrink: 0; }
+.comment-date { font-family: var(--font-mono); font-size: 11px; color: var(--ink-soft); }
+.comment-delete { margin-left: auto; border: 1.5px solid var(--line); background: var(--paper); border-radius: 7px; padding: 3px 10px; font-family: var(--font-mono); font-size: 11px; color: var(--ink-soft); cursor: pointer; }
+.comment-delete:hover { border-color: var(--pop); color: var(--pop); }
+.comment-body { font-size: 15px; line-height: 1.7; color: var(--ink-2); margin-top: 8px; padding-left: 36px; white-space: pre-wrap; word-break: keep-all; }
+
+.comment-form { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; border: 2.5px solid var(--ink); border-radius: 14px; background: var(--card); box-shadow: 4px 4px 0 var(--ink); padding: 16px; }
+.comment-form textarea { width: 100%; border: 2px solid var(--ink); border-radius: 10px; background: var(--paper); font-family: var(--font-body); font-size: 15px; line-height: 1.6; padding: 12px; outline: none; resize: vertical; min-height: 80px; }
+.comment-form textarea:focus { border-color: var(--pop); box-shadow: 3px 3px 0 var(--pop); }
+.comment-form .btn { align-self: flex-end; }
 
 /* ═══════════ 마이페이지 ═══════════ */
 .profile-card { position: relative; z-index: 2; border: 2.5px solid var(--ink); border-radius: 18px; background: var(--card); box-shadow: 6px 6px 0 var(--ink); padding: 26px; display: grid; grid-template-columns: auto 1fr auto; gap: 24px; align-items: center; margin: 18px 0; }
@@ -335,9 +375,9 @@
   .admin-side .a-nav-lab, .admin-side .a-foot { display: none; }
 }
 @media (max-width: 720px) {
-  .board-table .thead { grid-template-columns: 60px 1fr 70px; }
+  .board-table .thead { grid-template-columns: 70px 1fr 80px; }
   .board-table .thead span:nth-child(n+4) { display: none; }
-  .board-row { grid-template-columns: 60px 1fr 70px; }
+  .board-row { grid-template-columns: 70px 1fr 80px; }
   .board-row > *:nth-child(n+4) { display: none; }
   .rstat { grid-template-columns: repeat(2, 1fr); }
   .kpi-row { grid-template-columns: 1fr; }
