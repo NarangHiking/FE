@@ -191,6 +191,7 @@
 .board-row .b-tag.info { background: var(--sky); }
 .board-row .b-title { font-weight: 700; font-size: 15px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; gap: 8px; }
 .board-row .b-title .cmt { font-family: var(--font-mono); font-size: 12px; color: var(--pop); flex-shrink: 0; }
+.board-row .b-title .trk { font-family: var(--font-mono); font-size: 11px; color: var(--forest); background: var(--sky); border: 1px solid var(--forest); border-radius: 5px; padding: 1px 6px; flex-shrink: 0; white-space: nowrap; }
 .board-row .b-title .new { background: var(--pop); color: #fff; font-family: var(--font-mono); font-size: 9px; padding: 1px 5px; border-radius: 4px; }
 .board-row .b-meta { font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .board-row .b-num { font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft); text-align: right; }
@@ -359,6 +360,10 @@
 .icon-btn { width: 30px; height: 30px; border: 2px solid var(--ink); border-radius: 7px; background: var(--card); display: grid; place-items: center; cursor: pointer; box-shadow: 1.5px 1.5px 0 var(--ink); font-size: 13px; }
 .icon-btn:hover { background: var(--sky); }
 .icon-btn.danger:hover { background: var(--pop); color: #fff; }
+
+/* 경로 일괄 등록 행 */
+.bulk-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; border: 1.5px solid var(--line); border-radius: 10px; padding: 8px 12px; background: var(--card); }
+.bulk-file { font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft); max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 @media (max-width: 1000px) {
   .d-hero { grid-template-columns: 1fr; }

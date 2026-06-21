@@ -1,14 +1,21 @@
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import MountainScene from './MountainScene.jsx';
+import { imageUrl } from '../utils/image.js';
 
 // 산 카드. showRank 로 순위 배지 노출 여부 제어.
 export default function MountainCard({ m, sceneVariant, showRank = true }) {
   const [fav, setFav] = useState(m.rank === 1);
+  const [imgOk, setImgOk] = useState(true);
+  const img = imageUrl(m.img);
   return (
     <Link className="card" to={`/mountains/${m.id}`}>
       <div className="pic">
-        <MountainScene variant={sceneVariant ?? m.id + 10} palette={m.pal} w={300} h={150} />
+        {img && imgOk ? (
+          <img className="card-img" src={img} alt={m.name} loading="lazy" onError={() => setImgOk(false)} />
+        ) : (
+          <MountainScene variant={sceneVariant ?? m.id + 10} palette={m.pal} w={300} h={150} />
+        )}
         <div className="ht" />
         {showRank && <div className="rank">{m.rank}</div>}
         <button

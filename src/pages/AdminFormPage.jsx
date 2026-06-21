@@ -217,14 +217,14 @@ function MountainForm({ id, isEdit, list }) {
 }
 
 // ── 경로 폼 ──────────────────────────────────────────────────
-// 등록: POST /api/track { mountainId, name, gpxFilePath }
-// 수정: PUT  /api/track { id, mountainId, name, gpxFilePath }
+// 등록/수정 모두 multipart: @RequestPart Track t (JSON) + @RequestPart file (GPX, 선택)
 function RouteForm({ id, isEdit, list }) {
   const navigate = useNavigate();
   const [mountains,   setMountains]   = useState([]);
   const [mountainId,  setMountainId]  = useState('');
   const [name,        setName]        = useState('');
-  const [gpxFilePath, setGpxFilePath] = useState('');
+  const [file,        setFile]        = useState(null);  // 업로드할 GPX 파일
+  const [currentGpx,  setCurrentGpx]  = useState('');    // 기존 GPX 경로(수정 시 표시)
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
 
@@ -249,7 +249,7 @@ function RouteForm({ id, isEdit, list }) {
         const t = j.data ?? j;
         setMountainId(String(t.mountainId ?? ''));
         setName(t.name ?? '');
-        setGpxFilePath(t.gpxFilePath ?? '');
+        setCurrentGpx(t.gpxFilePath ?? '');
       })
       .catch(() => {});
   }, [id, isEdit]);
@@ -259,14 +259,20 @@ function RouteForm({ id, isEdit, list }) {
     setError('');
     setSubmitting(true);
     try {
-      const body = { mountainId: Number(mountainId), name, gpxFilePath: gpxFilePath || null };
+      // multipart: @RequestPart Track t (JSON) + @RequestPart file (GPX, 선택)
+      const t = isEdit
+        ? { id: Number(id), mountainId: Number(mountainId), name }
+        : { mountainId: Number(mountainId), name };
+      const fd = new FormData();
+      fd.append('t', new Blob([JSON.stringify(t)], { type: 'application/json' }));
+      if (file) fd.append('file', file);
       const res = isEdit
-        ? await apiFetch('/api/track', { method: 'PUT',  body: JSON.stringify({ ...body, id: Number(id) }) })
-        : await apiFetch('/api/track', { method: 'POST', body: JSON.stringify(body) });
+        ? await apiFetch('/api/track', { method: 'PUT',  body: fd })
+        : await apiFetch('/api/track', { method: 'POST', body: fd });
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.message ?? '저장 실패');
+        throw new Error(err.error ?? err.message ?? '저장 실패');
       }
       navigate(list);
     } catch (err) {
@@ -294,8 +300,9 @@ function RouteForm({ id, isEdit, list }) {
       <Field label="경로명" required>
         <TextInput value={name} onChange={e => setName(e.target.value)} placeholder="예: 백운대 정규 코스" />
       </Field>
-      <Field label="GPX 파일 경로" hint="서버 저장 경로 또는 URL">
-        <TextInput value={gpxFilePath} onChange={e => setGpxFilePath(e.target.value)} placeholder="/gpx/bukhansan_1.gpx" />
+      <Field label="GPX 파일" hint={isEdit ? (currentGpx ? `현재: ${currentGpx} · 변경 시에만 선택` : '변경 시에만 선택') : '.gpx 파일 업로드 (선택)'}>
+        <input type="file" accept=".gpx,application/gpx+xml,application/octet-stream"
+          onChange={e => setFile(e.target.files?.[0] ?? null)} />
       </Field>
     </FormShell>
   );

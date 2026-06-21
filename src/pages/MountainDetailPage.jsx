@@ -1,8 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import MountainScene from '../components/MountainScene.jsx';
+import TrailLeafletMap from '../components/TrailLeafletMap.jsx';
 import { MOUNTAINS } from '../data/mountains.js';
 import { apiFetch, useAuth } from '../context/AuthContext.jsx';
+import { imageUrl } from '../utils/image.js';
 
 const PALETTES = ['forest', 'moss', 'alpine', 'dusk', 'mist', 'dawn'];
 
@@ -22,6 +24,18 @@ function wxText(w) {
 const fmtHour = (t) => (t ? `${String(t).slice(0, 2)}시` : '');
 const fmtClock = (t) => { if (!t) return '—'; const s = String(t).trim().padStart(4, '0'); return `${s.slice(0, 2)}:${s.slice(2, 4)}`; };
 const todayYmd = () => { const d = new Date(); return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`; };
+// 'YYYYMMDD' → 오늘/내일/모레/MM.DD(요일)
+const dayLabel = (ymd) => {
+  if (!ymd) return '';
+  const d = new Date(Number(ymd.slice(0, 4)), Number(ymd.slice(4, 6)) - 1, Number(ymd.slice(6, 8)));
+  const now = new Date();
+  const diff = Math.round((d - new Date(now.getFullYear(), now.getMonth(), now.getDate())) / 86400000);
+  if (diff === 0) return '오늘';
+  if (diff === 1) return '내일';
+  if (diff === 2) return '모레';
+  const w = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()];
+  return `${ymd.slice(4, 6)}.${ymd.slice(6, 8)}(${w})`;
+};
 
 // BE Track → 코스 탭 포맷 변환 (km·lv 는 BE Track 에 없어 더미)
 function toRoute(track, fallbackSummit) {
@@ -30,6 +44,7 @@ function toRoute(track, fallbackSummit) {
     name: track.name,
     summit: fallbackSummit,
     gpxFilePath: track.gpxFilePath,
+    gpxUrl: track.gpxUrl ?? null, // BE가 주는 전체 URL
     recommendCnt: track.recommendCnt ?? 0,
   };
 }
@@ -52,9 +67,11 @@ export default function MountainDetailPage() {
 
   // 화면(디자인) 상태
   const [aiOpen, setAiOpen] = useState(true);
+  const [imgOk, setImgOk] = useState(true); // 대표 이미지 로드 성공 여부
 
   // 날씨(시간대별) + 일출/일몰
   const [weather, setWeather] = useState([]);
+  const [dayIdx, setDayIdx] = useState(0);
   const [wxIdx, setWxIdx] = useState(0);
   const [wxErr, setWxErr] = useState(false);
   const [sun, setSun] = useState(null);
@@ -66,9 +83,11 @@ export default function MountainDetailPage() {
   const [cmtBusy, setCmtBusy] = useState(false);
   const fileRef = useRef(null);
 
-  // 이미지 응답 필드명이 확정 전이라 방어적으로 처리 (url / imageUrl / path / storedFilename)
-  const imgSrc = (img) =>
-    typeof img === 'string' ? img : (img?.url ?? img?.imageUrl ?? img?.path ?? img?.storedFilename ?? '');
+  // 후기 사진: BE 가 imageUrls(전체 URL 배열) 제공. 구버전(images: ImageResponse[]) 도 폴백 지원.
+  const commentImgs = (c) =>
+    Array.isArray(c.imageUrls) ? c.imageUrls
+      : Array.isArray(c.images) ? c.images.map((im) => (typeof im === 'string' ? im : (im?.imageUrl ?? im?.url ?? '')))
+      : [];
 
   // ── 산 상세 + 코스 목록 병렬 조회 ──
   useEffect(() => {
@@ -97,7 +116,7 @@ export default function MountainDetailPage() {
     setWxErr(false);
     apiFetch(`/api/weather?mtnName=${encodeURIComponent(mtn.name)}`)
       .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then((j) => { setWeather(j.data ?? j); setWxIdx(0); })
+      .then((j) => { setWeather(j.data ?? j); setDayIdx(0); setWxIdx(0); })
       .catch(() => setWxErr(true));
     // KASI 일출일몰 location 은 지명(시/도)만 받음 → mtn.location 의 첫 지명 사용 (예: "서울/경기" → "서울")
     const sunLoc = (mtn.location || mtn.name).split('/')[0].trim().split(' ')[0];
@@ -110,6 +129,9 @@ export default function MountainDetailPage() {
       })
       .catch(() => {});
   }, [mtn?.name]);
+
+  // 산 바뀌면 대표 이미지 에러 상태 리셋
+  useEffect(() => { setImgOk(true); }, [mtn?.storedFilename]);
 
   // ── 코스 탭 바뀔 때 추천 여부 조회 ──
   useEffect(() => {
@@ -203,21 +225,43 @@ export default function MountainDetailPage() {
     else alert('댓글 삭제에 실패했습니다.');
   }
 
+  // 단기예보(최대 3일) → 일자별 그룹 + 일 최저/최고 + 3시간 간격 슬롯
+  const byDay = useMemo(() => {
+    const map = new Map();
+    for (const w of weather) {
+      if (!map.has(w.fcstDate)) map.set(w.fcstDate, []);
+      map.get(w.fcstDate).push(w);
+    }
+    return [...map.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([date, hrs]) => {
+        hrs.sort((a, b) => a.fcstTime.localeCompare(b.fcstTime));
+        const temps = hrs.map((h) => parseInt(h.temperature, 10)).filter(Number.isFinite);
+        const slots = hrs.filter((h) => Number(h.fcstTime.slice(0, 2)) % 3 === 0).slice(0, 8);
+        return {
+          date,
+          label: dayLabel(date),
+          slots: slots.length ? slots : hrs.slice(0, 8),
+          min: temps.length ? Math.min(...temps) : null,
+          max: temps.length ? Math.max(...temps) : null,
+        };
+      });
+  }, [weather]);
+
   if (loading) return <div className="wrap" style={{ padding: 60, textAlign: 'center' }}>불러오는 중…</div>;
   if (error) return <div className="wrap" style={{ padding: 60, textAlign: 'center', color: 'var(--pop)' }}>{error}</div>;
   if (!mtn) return null;
 
   const pal = PALETTES[mtn.id % PALETTES.length];
+  const heroImg = imageUrl(mtn.imageUrl ?? mtn.storedFilename); // 전체 URL(imageUrl) 우선
   const route = routes[tab];
+  const gpxHref = route?.gpxUrl || imageUrl(route?.gpxFilePath || ''); // 전체 URL 우선, 없으면 키→URL
 
   // ── 지도 좌표 ──
   // TODO(BE): Mtn DTO 에 lat/lng 추가 권장. 현재는 더미 좌표표에서 이름으로 매칭, 없으면 북한산.
   const coord = MOUNTAINS.find((x) => x.name === mtn.name);
   const lat = mtn.lat ?? coord?.lat ?? 37.6586;
   const lng = mtn.lng ?? coord?.lng ?? 126.9779;
-  const dLat = 0.05, dLng = 0.075;
-  const bbox = `${lng - dLng}%2C${lat - dLat}%2C${lng + dLng}%2C${lat + dLat}`;
-  const mapSrc = `https://www.openstreetmap.org/export/embed.html?bbox=${bbox}&layer=mapnik&marker=${lat}%2C${lng}`;
 
   // ── AI 어시스턴트 (디자인용 정적 대화) ──
   // TODO(AI): 실제 어시스턴트 연동(Claude API 등). BE 레포엔 없음 → 별도 AI 서비스 필요.
@@ -228,8 +272,9 @@ export default function MountainDetailPage() {
   ];
   const aiChips = ['날씨 확인', '초보 코스 추천', '준비물 알려줘', `${mtn.name} 정보`];
 
-  // 시간대별 날씨 (앞쪽 8개 슬롯) + 선택 슬롯
-  const wxSlots = weather.slice(0, 8);
+  // 선택한 날의 시간대별 슬롯 + 선택 시각
+  const wxDay = byDay[Math.min(dayIdx, Math.max(0, byDay.length - 1))] ?? null;
+  const wxSlots = wxDay?.slots ?? [];
   const wxCur = wxSlots[wxIdx] ?? wxSlots[0] ?? null;
 
   return (
@@ -237,7 +282,11 @@ export default function MountainDetailPage() {
       {/* ───── 좌측: 정보 + 후기 ───── */}
       <aside className="md-left">
         <div className="md-hero">
-          <MountainScene variant={(mtn.id ?? 1) + 30} palette={pal} w={384} h={196} />
+          {heroImg && imgOk ? (
+            <img className="md-hero-img" src={heroImg} alt={mtn.name} onError={() => setImgOk(false)} />
+          ) : (
+            <MountainScene variant={(mtn.id ?? 1) + 30} palette={pal} w={384} h={196} />
+          )}
           <div className="ht" />
           <div className="veil" />
           <span className="ele-badge">↑ {mtn.height}m</span>
@@ -277,8 +326,10 @@ export default function MountainDetailPage() {
           {/* 선택된 코스(트랙)별로 댓글이 나뉜다 */}
           {route && <div className="cmt-track-label">📍 {route.name}</div>}
 
-          {/* 댓글 작성 (로그인 시) */}
-          {user ? (
+          {/* 댓글 작성: 후기는 코스(track)별이라 코스가 없으면 작성 불가 */}
+          {!route ? (
+            <p className="md-cmt-empty">이 산에는 등록된 코스가 없어 후기를 작성할 수 없어요. (후기는 코스별로 작성됩니다)</p>
+          ) : user ? (
             <form className="md-cmt-form" onSubmit={submitComment}>
               <textarea
                 placeholder={`이 코스 후기를 남겨주세요`}
@@ -315,11 +366,11 @@ export default function MountainDetailPage() {
                   )}
                 </div>
                 <div className="rbody">{c.content}</div>
-                {Array.isArray(c.images) && c.images.length > 0 && (
+                {commentImgs(c).length > 0 && (
                   <div className="rphotos">
-                    {c.images.map((img, k) => (
-                      <a className="rphoto" key={k} href={imgSrc(img)} target="_blank" rel="noreferrer">
-                        <img src={imgSrc(img)} alt="" />
+                    {commentImgs(c).map((u, k) => (
+                      <a className="rphoto" key={k} href={u} target="_blank" rel="noreferrer">
+                        <img src={u} alt="" />
                       </a>
                     ))}
                   </div>
@@ -332,12 +383,8 @@ export default function MountainDetailPage() {
 
       {/* ───── 중앙: 지도 + 코스/날씨 카드 ───── */}
       <div className="md-map">
-        <iframe
-          className="md-iframe"
-          title={`${mtn.name} 지도`}
-          src={mapSrc}
-          loading="lazy"
-        />
+        {/* 코스 바뀌면 key로 지도 리마운트 → GPX 다시 로드/맞춤 */}
+        <TrailLeafletMap key={route?.id ?? 'none'} center={[lat, lng]} gpxUrl={gpxHref} />
 
         {/* 코스 + 날씨 플로팅 카드 */}
         <div className="md-course-card">
@@ -345,6 +392,9 @@ export default function MountainDetailPage() {
           <div className="cc-top">
             <div className="cc-title">{route ? route.name : '등록된 코스 없음'}</div>
             <div className="cc-actions">
+              {gpxHref && (
+                <a className="cc-save" href={gpxHref} download title="GPX 다운로드">⬇ GPX</a>
+              )}
               <button className={'cc-save' + (fav ? ' on' : '')} onClick={toggleFav}
                 title={user ? '' : '로그인 후 저장'}>
                 {fav ? '★ 저장됨' : '☆ 저장'}
@@ -366,11 +416,23 @@ export default function MountainDetailPage() {
             </button>
           </div>
 
-          <div className="cc-wx-label">🌤 시간대별 날씨</div>
-          {wxSlots.length === 0 ? (
+          <div className="cc-wx-label">🌤 단기예보 (최대 3일)</div>
+          {byDay.length === 0 ? (
             <div className="wx-empty">{wxErr ? '날씨 정보를 불러올 수 없어요' : '날씨 정보를 불러오는 중…'}</div>
           ) : (
             <>
+              {/* 일자 탭 (오늘/내일/모레) */}
+              <div className="wx-dayrow">
+                {byDay.map((d, i) => (
+                  <button key={d.date} className={'wx-daytab' + (i === dayIdx ? ' on' : '')}
+                    onClick={() => { setDayIdx(i); setWxIdx(0); }}>
+                    <span className="dl">{d.label}</span>
+                    {d.max != null && <span className="dt">{d.max}° / {d.min}°</span>}
+                  </button>
+                ))}
+              </div>
+
+              {/* 선택한 날의 시간대별 */}
               <div className="wx-days">
                 {wxSlots.map((w, i) => (
                   <div key={i} className={'wx-day' + (i === wxIdx ? ' on' : '')} onClick={() => setWxIdx(i)}>
@@ -380,15 +442,17 @@ export default function MountainDetailPage() {
                   </div>
                 ))}
               </div>
+
               <div className="wx-summary">
                 <span className="big">{wxIcon(wxCur)}</span>
                 <div className="now">
                   <b>{wxText(wxCur)} {wxCur?.temperature}°C</b>
-                  <span>강수 {wxCur?.precipitationProbability}% · 습도 {wxCur?.humidity}%</span>
+                  <span>{wxDay?.max != null ? `최고 ${wxDay.max}° · 최저 ${wxDay.min}°` : ''}</span>
                 </div>
                 <div className="extra">
-                  <span>🌬 {wxCur?.windSpeed}m/s</span><span>💧 {wxCur?.precipitationProbability}%</span>
-                  <span>🌅 {fmtClock(sun?.sunrise)}</span><span>🌇 {fmtClock(sun?.sunset)}</span>
+                  <span>💧 강수 {wxCur?.precipitationProbability}%</span><span>💦 습도 {wxCur?.humidity}%</span>
+                  <span>🌬 바람 {wxCur?.windSpeed}m/s</span>
+                  <span>🌅 {fmtClock(sun?.sunrise)} · 🌇 {fmtClock(sun?.sunset)}</span>
                 </div>
               </div>
             </>

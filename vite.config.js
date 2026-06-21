@@ -1,8 +1,9 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// BE 서버 (RDS/EC2). 포트 없으면 80.
-const API_TARGET = 'http://3.25.47.79';
+// BE 서버 프록시 타깃
+// const API_TARGET = 'http://3.25.47.79'; // EC2 (배포 서버) — 잠시 주석
+const API_TARGET = 'http://localhost:8080'; // 로컬 BE (Spring Boot)
 
 export default defineConfig({
   plugins: [react()],

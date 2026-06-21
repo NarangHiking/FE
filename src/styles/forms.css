@@ -62,6 +62,16 @@ textarea.inp.tall { min-height: 320px; }
 .form-actions .grow { flex: 1; }
 .form-actions .del-note { font-family: var(--font-mono); font-size: 11px; color: var(--ink-soft); }
 
+/* 코스 검색 픽커 */
+.course-pick { position: relative; }
+.course-results { position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 20; margin: 0; padding: 0; list-style: none; background: var(--card); border: 2px solid var(--ink); border-radius: 10px; box-shadow: 4px 4px 0 var(--ink); max-height: 260px; overflow-y: auto; }
+.course-results li { padding: 11px 14px; cursor: pointer; font-size: 14px; font-weight: 600; border-bottom: 1px dashed var(--line); }
+.course-results li:last-child { border-bottom: none; }
+.course-results li:hover { background: var(--paper-2); }
+.course-results li.none { color: var(--ink-soft); cursor: default; font-weight: 400; }
+.course-chip { display: inline-flex; align-items: center; gap: 10px; border: 2px solid var(--ink); background: var(--sky); border-radius: 10px; padding: 10px 14px; font-weight: 800; font-size: 14px; box-shadow: 2px 2px 0 var(--ink); }
+.course-chip button { border: none; background: none; cursor: pointer; font-size: 15px; color: var(--pop-deep); line-height: 1; }
+
 /* side tips card */
 .tips-card { border: 2.5px solid var(--ink); border-radius: 14px; background: var(--gold); box-shadow: 4px 4px 0 var(--ink); padding: 18px; position: sticky; top: 90px; }
 .tips-card h4 { font-family: var(--font-disp); font-weight: 400; font-size: 20px; margin-bottom: 10px; }

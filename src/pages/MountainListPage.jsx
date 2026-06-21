@@ -22,6 +22,7 @@ function toCard(mtn, index) {
     time:   '-',
     lv:     '-',
     lvN:    0,
+    img:    mtn.imageUrl ?? mtn.storedFilename ?? null, // R2 대표 사진 (없으면 카드가 생성아트로 폴백)
     pal:    PALETTES[index % PALETTES.length],
   };
 }

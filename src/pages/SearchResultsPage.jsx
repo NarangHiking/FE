@@ -1,15 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import MountainCard from '../components/MountainCard.jsx';
-import { MOUNTAINS } from '../data/mountains.js';
-import { FREE_POSTS } from '../data/posts.js';
+import { mtnToCard } from '../data/mountains.js';
+import { apiFetch } from '../context/AuthContext.jsx';
 
-function tagClass(tag) {
-  if (tag === '후기') return 'review';
-  if (tag === '질문') return 'q';
-  if (tag === '정보') return 'info';
-  return '';
-}
+// 'YYYY…' → 'MM.DD' 류 표시 (BE createdAt 포맷이 다양해도 앞부분만)
+const fmtDate = (s) => (s ? String(s).replace(/[^0-9]/g, '').slice(4, 8).replace(/(\d\d)(\d\d)/, '$1.$2') : '');
+const catLabel = (c) => (c === 'feedback' ? '건의' : '자유');
 
 export default function SearchResultsPage() {
   const [params] = useSearchParams();
@@ -18,14 +15,29 @@ export default function SearchResultsPage() {
   const [tab, setTab] = useState('전체');
   const [text, setText] = useState(q);
 
-  // TODO(BE): 통합검색 — q 로 아래 호출 후 더미 필터 교체.
-  //   · 경로/산: GET /api/track/search?name={q}
-  //   · 게시글:  GET /api/board?keyword={q}
-  //   useEffect([q]) 로 재조회.
-  // 디자인용 단순 필터(부분일치). 결과 없으면 빈 상태 화면.
-  const hit = (s) => !q || s.includes(q);
-  const mtns = MOUNTAINS.filter((m) => hit(m.name) || hit(m.region));
-  const posts = FREE_POSTS.filter((p) => hit(p.title) || hit(p.author));
+  // 산: 전체 목록 1회 조회 후 클라이언트 필터 (BE에 산 이름검색 엔드포인트 없음)
+  const [allMtns, setAllMtns] = useState([]);
+  useEffect(() => {
+    apiFetch('/api/mtn/list')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => { if (j) setAllMtns(j.data ?? j); })
+      .catch(() => {});
+  }, []);
+
+  // 게시글: 키워드 검색 (카테고리 없이 전체) — GET /api/board?keyword={q}
+  const [posts, setPosts] = useState([]);
+  useEffect(() => {
+    const p = new URLSearchParams();
+    if (q) p.append('keyword', q);
+    apiFetch(`/api/board?${p}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((j) => { if (j) setPosts(j.data ?? j); })
+      .catch(() => {});
+  }, [q]);
+
+  const mtns = q
+    ? allMtns.filter((m) => (m.name?.includes(q) || m.location?.includes(q)))
+    : allMtns;
   const total = mtns.length + posts.length;
 
   const onSubmit = (e) => {
@@ -69,11 +81,11 @@ export default function SearchResultsPage() {
       {total === 0 && (
         <div className="empty-state">
           <div className="es-ic">🧭</div>
-          <div className="es-t">‘{q}’에 대한 결과가 없어요</div>
+          <div className="es-t">{q ? `‘${q}’에 대한 결과가 없어요` : '검색어를 입력해 보세요'}</div>
           <p className="es-s">철자를 확인하거나 더 짧은 검색어로 다시 시도해 보세요.</p>
           <div className="quick" style={{ justifyContent: 'center' }}>
             <span className="lab">인기 검색</span>
-            {['북한산', '관악산', '서울 근교', '초보 코스'].map((k) => (
+            {['북한산', '관악산', '서울', '지리산'].map((k) => (
               <Link key={k} className="chip" to={`/search?q=${k}`}>{k}</Link>
             ))}
           </div>
@@ -89,7 +101,7 @@ export default function SearchResultsPage() {
           </div>
           <div className="grid">
             {mtns.map((m, i) => (
-              <MountainCard key={m.id} m={m} sceneVariant={i + 71} showRank={false} />
+              <MountainCard key={m.id} m={mtnToCard(m)} sceneVariant={i + 71} showRank={false} />
             ))}
           </div>
         </section>
@@ -104,16 +116,15 @@ export default function SearchResultsPage() {
           </div>
           <div className="board-table">
             <div className="thead">
-              <span>분류</span><span>제목</span><span>작성자</span><span>작성</span><span>댓글</span><span>조회</span>
+              <span>분류</span><span>제목</span><span>작성자</span><span>작성</span><span>댓글</span>
             </div>
             {posts.map((p) => (
-              <Link key={p.id} className="board-row" to="/board">
-                <span className={'b-tag ' + tagClass(p.tag)}>{p.tag}</span>
-                <span className="b-title">{p.title}{p.cm > 0 && <span className="cmt">[{p.cm}]</span>}</span>
-                <span className="b-meta">{p.author}</span>
-                <span className="b-meta">{p.time}</span>
-                <span className="b-num">{p.cm}</span>
-                <span className="b-num">{p.views}</span>
+              <Link key={p.id} className="board-row" to={`/board/${p.id}`}>
+                <span className={'b-tag ' + (p.category === 'feedback' ? 'q' : '')}>{catLabel(p.category)}</span>
+                <span className="b-title">{p.title}{p.commentCount > 0 && <span className="cmt">[{p.commentCount}]</span>}</span>
+                <span className="b-meta">{p.name}</span>
+                <span className="b-meta">{fmtDate(p.createdAt)}</span>
+                <span className="b-num">{p.commentCount}</span>
               </Link>
             ))}
           </div>

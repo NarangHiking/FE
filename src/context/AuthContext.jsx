@@ -89,8 +89,19 @@ export function AuthProvider({ children }) {
     setUser(null);
   }
 
+  // 프로필 수정 후 등 유저 정보 재조회 (GET /api/user)
+  async function refresh() {
+    try {
+      const res = await apiFetch('/api/user');
+      if (res.ok) {
+        const json = await res.json();
+        setUser(json.data ?? json);
+      }
+    } catch {}
+  }
+
   return (
-    <AuthContext.Provider value={{ user, initializing, login, logout }}>
+    <AuthContext.Provider value={{ user, initializing, login, logout, refresh }}>
       {children}
     </AuthContext.Provider>
   );

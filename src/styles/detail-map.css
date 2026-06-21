@@ -9,6 +9,7 @@
 .md-left { width: 384px; flex-shrink: 0; height: 100%; overflow-y: auto; border-right: 2.5px solid var(--ink); background: var(--card); }
 .md-hero { position: relative; height: 196px; border-bottom: 2.5px solid var(--ink); overflow: hidden; }
 .md-hero .scene { position: absolute; inset: 0; }
+.md-hero .md-hero-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 .md-hero .ht { position: absolute; inset: 0; background-image: radial-gradient(#14201a 1px, transparent 1.2px); background-size: 6px 6px; opacity: 0.1; mix-blend-mode: multiply; }
 .md-hero .veil { position: absolute; inset: 0; background: linear-gradient(to top, rgba(15,32,26,0.82), rgba(15,32,26,0.05) 62%); }
 .md-hero .hbody { position: absolute; left: 18px; right: 18px; bottom: 14px; z-index: 2; color: var(--paper); }
@@ -54,6 +55,12 @@
 /* ── 중앙 지도 ── */
 .md-map { position: relative; flex: 1; min-width: 0; height: 100%; }
 .md-iframe { width: 100%; height: 100%; border: 0; display: block; }
+/* Leaflet 지도: 컨테이너 채우기 + 오버레이(코스카드/AI)보다 아래로 */
+.md-leaflet { width: 100%; height: 100%; z-index: 1; }
+.md-map .leaflet-control { z-index: 15; }
+.trail-pin-wrap { background: transparent; border: none; }
+.trail-pin { width: 26px; height: 26px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); border: 2px solid var(--ink); box-shadow: 1px 1px 0 var(--ink); display: grid; place-items: center; color: #fff; font-family: var(--font-disp); font-size: 11px; }
+.trail-pin > span { transform: rotate(45deg); line-height: 1; }
 
 /* 코스 + 날씨 플로팅 카드 (하단 중앙) */
 .md-course-card { position: absolute; left: 28px; bottom: 24px; width: 380px; max-width: calc(100% - 56px); background: var(--card); border: 2.5px solid var(--ink); border-radius: 16px; box-shadow: 5px 5px 0 var(--ink); padding: 16px 18px; z-index: 20; }
@@ -75,6 +82,12 @@
 
 .cc-wx-label { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink-soft); margin: 14px 0 7px; display: flex; align-items: center; gap: 6px; }
 .wx-empty { font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft); padding: 8px 0; }
+.wx-dayrow { display: flex; gap: 6px; margin-bottom: 8px; }
+.wx-daytab { flex: 1; border: 2px solid var(--ink); border-radius: 9px; background: var(--paper); cursor: pointer; padding: 6px 4px; display: flex; flex-direction: column; align-items: center; gap: 2px; box-shadow: 2px 2px 0 var(--ink); }
+.wx-daytab .dl { font-family: var(--font-body); font-weight: 800; font-size: 13px; }
+.wx-daytab .dt { font-family: var(--font-mono); font-size: 10px; color: var(--ink-soft); }
+.wx-daytab.on { background: var(--pop); color: #fff; border-color: var(--pop); }
+.wx-daytab.on .dt { color: rgba(255,255,255,0.85); }
 .wx-days { display: flex; gap: 5px; }
 .wx-day { flex: 1; border: 1.5px solid var(--line); border-radius: 9px; text-align: center; padding: 7px 2px; cursor: pointer; background: var(--paper); }
 .wx-day:hover { border-color: var(--ink); }

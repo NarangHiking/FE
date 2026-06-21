@@ -12,11 +12,13 @@ import SuggestionBoardPage from './pages/SuggestionBoardPage.jsx';
 import MyPage from './pages/MyPage.jsx';
 import AdminPage from './pages/AdminPage.jsx';
 import AdminFormPage from './pages/AdminFormPage.jsx';
+import AdminRouteBulkPage from './pages/AdminRouteBulkPage.jsx';
 import PostWritePage from './pages/PostWritePage.jsx';
 import SearchResultsPage from './pages/SearchResultsPage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import SignupPage from './pages/SignupPage.jsx';
 import GpxGuidePage from './pages/GpxGuidePage.jsx';
+import ProfileEditPage from './pages/ProfileEditPage.jsx';
 
 // 라우트 정의. 어드민은 자체 레이아웃을 쓰므로 공통 Header/Footer를 끼지 않는다.
 export default function App() {
@@ -40,6 +42,7 @@ export default function App() {
     return (
       <Routes>
         <Route path="/admin" element={<AdminPage />} />
+        <Route path="/admin/routes/bulk" element={<AdminRouteBulkPage />} />
         <Route path="/admin/:tab/new" element={<AdminFormPage />} />
         <Route path="/admin/:tab/:id/edit" element={<AdminFormPage />} />
         <Route path="/admin/:tab" element={<AdminPage />} />
@@ -73,6 +76,7 @@ export default function App() {
           <Route path="/suggestions" element={<SuggestionBoardPage />} />
           <Route path="/suggestions/write" element={<PostWritePage />} />
           <Route path="/mypage" element={<MyPage />} />
+          <Route path="/mypage/edit" element={<ProfileEditPage />} />
           <Route path="/gpx" element={<GpxGuidePage />} />
           <Route path="*" element={<MainPage />} />
         </Routes>

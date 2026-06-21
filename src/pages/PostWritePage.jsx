@@ -53,13 +53,31 @@ export default function PostWritePage() {
   const [title, setTitle]     = useState('');
   const [content, setContent] = useState('');
   const [cat, setCat]         = useState(c.cats[0]);
+  const [trackId, setTrackId] = useState('');      // 대상 코스 (건의는 필수)
+  const [tracks, setTracks]   = useState([]);       // [{id, label}]
+  const [trackQuery, setTrackQuery] = useState(''); // 코스 검색어
   const [files, setFiles]     = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError]     = useState('');
   const fileRef = useRef(null);
 
+  // ── 코스 목록 (대상 코스 선택용): /api/track + /api/mtn/list → "산이름 · 코스명" ──
+  useEffect(() => {
+    Promise.all([
+      apiFetch('/api/track').then((r) => (r.ok ? r.json() : null)),
+      apiFetch('/api/mtn/list').then((r) => (r.ok ? r.json() : null)),
+    ])
+      .then(([tj, mj]) => {
+        const tl = tj?.data ?? tj ?? [];
+        const ml = mj?.data ?? mj ?? [];
+        const mname = Object.fromEntries(ml.map((m) => [m.id, m.name]));
+        setTracks(tl.map((t) => ({ id: t.id, label: `${mname[t.mountainId] ?? '산'} · ${t.name}` })));
+      })
+      .catch(() => {});
+  }, []);
+
   // ── edit 모드: 기존 게시글 불러와서 prefill ───────────────
-  // GET /api/board/{id} → title, content, category 채우기
+  // GET /api/board/{id} → title, content, category, trackId 채우기
   useEffect(() => {
     if (!isEdit) return;
     apiFetch(`/api/board/${id}`)
@@ -71,6 +89,7 @@ export default function PostWritePage() {
         const post = json.data ?? json;
         setTitle(post.title   ?? '');
         setContent(post.content ?? '');
+        setTrackId(post.trackId != null ? String(post.trackId) : '');
       })
       .catch((err) => setError(err.message));
   }, [id, isEdit]);
@@ -92,17 +111,18 @@ export default function PostWritePage() {
     e.preventDefault();
     if (!title.trim())   return setError('제목을 입력하세요.');
     if (!content.trim()) return setError('내용을 입력하세요.');
+    // 건의(feedback)는 대상 코스(trackId) 필수 — BE도 400으로 막지만 미리 차단
+    if (kind === 'suggestions' && !trackId) return setError('건의는 대상 등산 코스를 선택해야 합니다.');
 
     setError('');
     setSubmitting(true);
 
     try {
       // BE는 board 파트를 JSON Blob으로, 파일은 addedImages 로 기대
+      const board = { title, content, category: c.category };
+      if (trackId) board.trackId = Number(trackId); // 자유글은 선택, 건의는 필수
       const fd = new FormData();
-      fd.append(
-        'board',
-        new Blob([JSON.stringify({ title, content, category: c.category })], { type: 'application/json' })
-      );
+      fd.append('board', new Blob([JSON.stringify(board)], { type: 'application/json' }));
       files.forEach((f) => fd.append('addedImages', f));
 
       const url    = isEdit ? `${BASE}/api/board/${id}` : `${BASE}/api/board`;
@@ -112,7 +132,7 @@ export default function PostWritePage() {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.message ?? '저장에 실패했습니다.');
+        throw new Error(err.error ?? err.message ?? '저장에 실패했습니다.');
       }
 
       const json    = await res.json();
@@ -127,6 +147,12 @@ export default function PostWritePage() {
 
   const eyebrow   = isEdit ? c.editEyebrow : c.eyebrow;
   const pageTitle = isEdit ? c.editTitle   : c.title;
+
+  // 코스 검색 픽커
+  const selectedTrack = tracks.find((t) => String(t.id) === trackId);
+  const trackMatches = trackQuery
+    ? tracks.filter((t) => t.label.toLowerCase().includes(trackQuery.toLowerCase())).slice(0, 50)
+    : [];
 
   return (
     <div className="wrap">
@@ -153,6 +179,42 @@ export default function PostWritePage() {
             <div className="form-grid">
               <Field label="분류" required>
                 <Select value={cat} options={c.cats} onChange={(e) => setCat(e.target.value)} />
+              </Field>
+
+              <Field
+                label="대상 코스"
+                required={kind === 'suggestions'}
+                hint={kind === 'suggestions' ? '건의는 대상 코스를 검색해 선택하세요' : '관련 코스가 있으면 검색해 선택'}
+                full
+              >
+                {selectedTrack ? (
+                  <div className="course-chip">
+                    🥾 {selectedTrack.label}
+                    <button type="button" onClick={() => { setTrackId(''); setTrackQuery(''); }} title="선택 해제">✕</button>
+                  </div>
+                ) : (
+                  <div className="course-pick">
+                    <input
+                      className="inp"
+                      placeholder="산 이름 또는 코스명으로 검색 (예: 북한산, 백운대)"
+                      value={trackQuery}
+                      onChange={(e) => setTrackQuery(e.target.value)}
+                    />
+                    {trackQuery && (
+                      <ul className="course-results">
+                        {trackMatches.length === 0 ? (
+                          <li className="none">검색 결과가 없어요</li>
+                        ) : (
+                          trackMatches.map((t) => (
+                            <li key={t.id} onClick={() => { setTrackId(String(t.id)); setTrackQuery(''); }}>
+                              🥾 {t.label}
+                            </li>
+                          ))
+                        )}
+                      </ul>
+                    )}
+                  </div>
+                )}
               </Field>
 
               <Field label="제목" required full>

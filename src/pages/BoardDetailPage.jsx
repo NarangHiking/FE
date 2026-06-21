@@ -103,18 +103,19 @@ export default function BoardDetailPage() {
         <div className="post-header">
           <div className="post-meta-row">
             <span className="tag green">{post.category === 'feedback' ? '건의' : '자유'}</span>
+            {post.trackName && <span className="tag">🥾 {post.trackName}</span>}
             <span className="post-author">{post.name}</span>
             <span className="post-date">{post.createdAt}</span>
           </div>
           <h1 className="post-title">{post.title}</h1>
         </div>
 
-        {/* 첨부 이미지 */}
-        {post.image && (
-          <div className="post-image">
-            <img src={post.image} alt="첨부 이미지" style={{ maxWidth: '100%', borderRadius: 8 }} />
+        {/* 첨부 이미지 (BoardDetailResponse.imageUrls: 전체 URL 배열) */}
+        {(post.imageUrls ?? (post.image ? [post.image] : [])).map((u, i) => (
+          <div className="post-image" key={i}>
+            <img src={u} alt={`첨부 이미지 ${i + 1}`} style={{ maxWidth: '100%' }} />
           </div>
-        )}
+        ))}
 
         {/* 본문 */}
         <div className="post-body">

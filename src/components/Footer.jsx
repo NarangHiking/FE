@@ -21,8 +21,14 @@ export default function Footer() {
           </div>
           <div className="foot-col">
             <h4>계정</h4>
-            <Link to="/login">로그인</Link>
-            <Link to="/signup">회원가입</Link>
+            {user ? (
+              <Link to="/mypage/edit">프로필 설정</Link>
+            ) : (
+              <>
+                <Link to="/login">로그인</Link>
+                <Link to="/signup">회원가입</Link>
+              </>
+            )}
             {isAdmin && <Link to="/admin">관리자 콘솔</Link>}
           </div>
           <div className="foot-col">

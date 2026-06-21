@@ -75,12 +75,13 @@ export default function AdminPage() {
 }
 
 // ── 공통 헤더 ───────────────────────────────────────────────
-function DataHead({ title, action, to }) {
+function DataHead({ title, action, to, extra }) {
   return (
     <div className="dc-head">
       <h2>{title}</h2>
       <div className="tools">
         <div className="search-mini"><span>🔍</span><input placeholder="검색" /></div>
+        {extra}
         <Link className="btn pop sm" to={to}>{action}</Link>
       </div>
     </div>
@@ -152,7 +153,8 @@ function MountainsTable({ mountains, onDelete }) {
 function RoutesTable({ tracks, onDelete }) {
   return (
     <div className="data-card">
-      <DataHead title="경로 목록" action="+ 경로 등록" to="/admin/routes/new" />
+      <DataHead title="경로 목록" action="+ 경로 등록" to="/admin/routes/new"
+        extra={<Link className="btn sm" to="/admin/routes/bulk">⬆ 일괄 등록</Link>} />
       <table className="table">
         <thead>
           <tr>

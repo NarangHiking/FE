@@ -101,6 +101,7 @@ export default function SuggestionBoardPage() {
                   <span className="b-meta">{p.name}</span>
                   <span className="b-title">
                     {p.title}
+                    {p.trackName && <span className="trk">🥾 {p.trackName}</span>}
                     {p.commentCount > 0 && <span className="cmt">[{p.commentCount}]</span>}
                   </span>
                   <span className="b-meta">{p.createdAt}</span>

@@ -45,5 +45,6 @@ export const mtnToCard = (m) => ({
   name: m.name,
   region: m.location,
   ele: m.height,
+  img: m.imageUrl ?? m.storedFilename ?? null, // 전체 URL(imageUrl) 우선, 없으면 키
   pal: CARD_PAL[(m.id ?? 0) % CARD_PAL.length],
 });
