@@ -3,7 +3,7 @@
    좌: 정보·후기 / 중앙: OSM 지도 + 코스·날씨 카드 / 우: AI 어시스턴트(플로팅)
    ═══════════════════════════════════════════════════════════════ */
 
-.md { position: relative; display: flex; width: min(1380px, calc(100vw - 48px)); margin: 22px auto; height: calc(100vh - 128px); min-height: 520px; overflow: hidden; background: var(--card); border: 2.5px solid var(--ink); border-radius: 18px; box-shadow: 6px 6px 0 var(--ink); z-index: 2; }
+.md { position: relative; display: flex; width: min(1480px, calc(100vw - 48px)); margin: 22px auto; height: calc(100vh - 128px); min-height: 520px; overflow: hidden; background: var(--card); border: 2.5px solid var(--ink); border-radius: 18px; box-shadow: 6px 6px 0 var(--ink); z-index: 2; }
 
 /* ── 좌측 패널 ── */
 .md-left { width: 384px; flex-shrink: 0; height: 100%; overflow-y: auto; border-right: 2.5px solid var(--ink); background: var(--card); }
@@ -103,7 +103,7 @@
 .wx-summary .extra { margin-left: auto; display: grid; grid-template-columns: auto auto; gap: 2px 12px; font-family: var(--font-mono); font-size: 11px; color: var(--ink-soft); }
 
 /* ── 우측 AI 어시스턴트 (플로팅) ── */
-.md-ai { position: absolute; top: 20px; right: 20px; width: 340px; max-height: calc(100% - 40px); display: flex; flex-direction: column; background: var(--card); border: 2.5px solid var(--ink); border-radius: 16px; box-shadow: 5px 5px 0 var(--ink); overflow: hidden; z-index: 30; }
+.md-ai { position: absolute; bottom: 20px; right: 20px; width: 340px; max-height: calc(100% - 40px); display: flex; flex-direction: column; background: var(--card); border: 2.5px solid var(--ink); border-radius: 16px; box-shadow: 5px 5px 0 var(--ink); overflow: hidden; z-index: 30; }
 .ai-head { display: flex; align-items: center; gap: 10px; padding: 13px 15px; background: var(--forest); color: var(--paper); border-bottom: 2.5px solid var(--ink); }
 .ai-head .ai-av { width: 34px; height: 34px; border-radius: 50%; border: 2px solid var(--paper); display: grid; place-items: center; font-size: 17px; flex-shrink: 0; }
 .ai-head .ai-t b { font-family: var(--font-disp); font-weight: 400; font-size: 17px; line-height: 1; display: block; }
