@@ -5,7 +5,7 @@ import MountainCard from '../components/MountainCard.jsx';
 import { REGIONS, mtnToCard, matchesRegion } from '../data/mountains.js';
 import { apiFetch } from '../context/AuthContext.jsx';
 
-const QUICK = ['북한산', '관악산', '서울 근교', '당일치기', '초보 코스'];
+const QUICK = ['북한산', '관악산', '지리산', '한라산', '설악산'];
 
 // 'YYYY-MM-DD…' / 'YYYY.MM.DD' → 'MM.DD'
 const fmtDate = (s) => (s ? String(s).replace(/[-/]/g, '.').slice(5, 10) : '');
@@ -67,8 +67,7 @@ export default function MainPage() {
             <p className="lead">산 이름·지역·거리로 GPX 트래킹 코스를 찾고, 능선 하나하나를 미리 걸어보세요.</p>
 
             <form className="searchbar" onSubmit={onSearch}>
-              <div className="cat">⛰ 산 이름 <span style={{ opacity: 0.5 }}>▾</span></div>
-              <input type="text" value={q} onChange={(e) => setQ(e.target.value)} placeholder="예) 북한산, 서울 근교, 5km 이하…" />
+              <input type="text" value={q} onChange={(e) => setQ(e.target.value)} placeholder="예) 북한산, 백운대 코스…" />
               <button type="submit">검색</button>
             </form>
 
