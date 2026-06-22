@@ -5,7 +5,6 @@ import { imageUrl } from '../utils/image.js';
 
 // 산 카드. showRank 로 순위 배지 노출 여부 제어.
 export default function MountainCard({ m, sceneVariant, showRank = true }) {
-  const [fav, setFav] = useState(m.rank === 1);
   const [imgOk, setImgOk] = useState(true);
   const img = imageUrl(m.img);
   return (
@@ -18,13 +17,6 @@ export default function MountainCard({ m, sceneVariant, showRank = true }) {
         )}
         <div className="ht" />
         {showRank && <div className="rank">{m.rank}</div>}
-        <button
-          className={'fav' + (fav ? ' on' : '')}
-          type="button"
-          onClick={(e) => { e.preventDefault(); setFav((v) => !v); }}
-        >
-          ♥
-        </button>
       </div>
       <div className="info">
         <div className="top">

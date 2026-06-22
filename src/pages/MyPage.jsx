@@ -2,13 +2,13 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth, apiFetch } from '../context/AuthContext.jsx';
 
-const TABS = ['저장한 산', '내가 쓴 글'];
+const TABS = ['저장한 코스', '내가 쓴 글'];
 
 export default function MyPage() {
   const { user } = useAuth();
   const navigate  = useNavigate();
 
-  const [tab, setTab] = useState('저장한 산');
+  const [tab, setTab] = useState('저장한 코스');
 
   // ── 저장한 코스 상태 ──────────────────────────────────────
   const [favorites, setFavorites] = useState([]);
@@ -88,14 +88,14 @@ export default function MyPage() {
         <Link className="btn sm ghost" to="/mypage/edit">⚙ 프로필 설정</Link>
       </div>
 
-      {/* ── 저장한 산 ── */}
-      {tab === '저장한 산' && (
+      {/* ── 저장한 코스 ── */}
+      {tab === '저장한 코스' && (
         <div style={{ marginBottom: 40 }}>
           {favLoading && <p style={{ padding: 40, textAlign: 'center' }}>불러오는 중…</p>}
           {favError   && <p style={{ padding: 40, textAlign: 'center', color: 'var(--pop)' }}>{favError}</p>}
           {!favLoading && !favError && favorites.length === 0 && (
             <p style={{ padding: 40, textAlign: 'center', color: 'var(--ink-soft)' }}>
-              저장한 코스가 없습니다. <Link to="/mountains">산 목록</Link>에서 ♥ 저장해보세요.
+              저장한 코스가 없습니다. <Link to="/mountains">산 상세</Link>에서 코스를 저장해보세요.
             </p>
           )}
           {!favLoading && !favError && favorites.length > 0 && (
