@@ -74,6 +74,34 @@ export default function AdminPage() {
   );
 }
 
+// ── 공통 페이지네이션 ────────────────────────────────────────
+const PAGE_SIZE = 10; // 한 페이지에 표시할 행 수
+
+function usePaged(items) {
+  const [page, setPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(items.length / PAGE_SIZE));
+  const cur = Math.min(page, totalPages); // 데이터가 줄어 범위를 벗어나면 보정
+  const offset = (cur - 1) * PAGE_SIZE;
+  return { page: cur, setPage, totalPages, offset, pageItems: items.slice(offset, offset + PAGE_SIZE) };
+}
+
+function Pagination({ page, totalPages, onPage }) {
+  if (totalPages <= 1) return null; // 1페이지면 숨김
+  const nums = [];
+  const start = Math.max(1, page - 2);
+  const end   = Math.min(totalPages, start + 4);
+  for (let i = start; i <= end; i++) nums.push(i);
+  return (
+    <div className="pagination" style={{ margin: '16px 0 4px' }}>
+      <span className={'pg ghost' + (page === 1 ? ' disabled' : '')} onClick={() => page > 1 && onPage(page - 1)}>←</span>
+      {nums.map((n) => (
+        <span key={n} className={'pg' + (n === page ? ' on' : '')} onClick={() => onPage(n)}>{n}</span>
+      ))}
+      <span className={'pg ghost' + (page === totalPages ? ' disabled' : '')} onClick={() => page < totalPages && onPage(page + 1)}>→</span>
+    </div>
+  );
+}
+
 // ── 공통 헤더 ───────────────────────────────────────────────
 function DataHead({ title, action, to, extra }) {
   return (
@@ -90,6 +118,7 @@ function DataHead({ title, action, to, extra }) {
 
 // ── 유저 테이블 ─────────────────────────────────────────────
 function UsersTable({ users }) {
+  const { page, setPage, totalPages, offset, pageItems } = usePaged(users);
   return (
     <div className="data-card">
       <DataHead title="유저 목록" action="+ 유저 등록" to="/admin/users/new" />
@@ -101,9 +130,9 @@ function UsersTable({ users }) {
           </tr>
         </thead>
         <tbody>
-          {users.map((u, i) => (
+          {pageItems.map((u, i) => (
             <tr key={u.email ?? i}>
-              <td className="id">{i + 1}</td>
+              <td className="id">{offset + i + 1}</td>
               <td><div className="uname"><span className="av">{u.name?.[0]}</span>{u.name}</div></td>
               <td className="hide-sm id">{u.email}</td>
               <td><span className={'role ' + (u.role?.toLowerCase())}>{u.role}</span></td>
@@ -112,12 +141,14 @@ function UsersTable({ users }) {
           ))}
         </tbody>
       </table>
+      <Pagination page={page} totalPages={totalPages} onPage={setPage} />
     </div>
   );
 }
 
 // ── 산 테이블 ───────────────────────────────────────────────
 function MountainsTable({ mountains, onDelete }) {
+  const { page, setPage, totalPages, pageItems } = usePaged(mountains);
   return (
     <div className="data-card">
       <DataHead title="산 목록" action="+ 산 등록" to="/admin/mountains/new"
@@ -130,7 +161,7 @@ function MountainsTable({ mountains, onDelete }) {
           </tr>
         </thead>
         <tbody>
-          {mountains.map((m) => (
+          {pageItems.map((m) => (
             <tr key={m.id}>
               <td className="id">{m.id}</td>
               <td style={{ fontWeight: 700 }}>{m.name}</td>
@@ -146,12 +177,14 @@ function MountainsTable({ mountains, onDelete }) {
           ))}
         </tbody>
       </table>
+      <Pagination page={page} totalPages={totalPages} onPage={setPage} />
     </div>
   );
 }
 
 // ── 경로 테이블 ─────────────────────────────────────────────
 function RoutesTable({ tracks, onDelete }) {
+  const { page, setPage, totalPages, pageItems } = usePaged(tracks);
   return (
     <div className="data-card">
       <DataHead title="경로 목록" action="+ 경로 등록" to="/admin/routes/new"
@@ -164,7 +197,7 @@ function RoutesTable({ tracks, onDelete }) {
           </tr>
         </thead>
         <tbody>
-          {tracks.map((r) => (
+          {pageItems.map((r) => (
             <tr key={r.id}>
               <td className="id">{r.id}</td>
               <td>{r.name}</td>
@@ -181,6 +214,7 @@ function RoutesTable({ tracks, onDelete }) {
           ))}
         </tbody>
       </table>
+      <Pagination page={page} totalPages={totalPages} onPage={setPage} />
     </div>
   );
 }
