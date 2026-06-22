@@ -1,6 +1,6 @@
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { useAuth } from './context/AuthContext.jsx';
-import { useEffect } from 'react';
+import { useEffect, lazy, Suspense } from 'react';
 import Header from './components/Header.jsx';
 import Footer from './components/Footer.jsx';
 import MainPage from './pages/MainPage.jsx';
@@ -13,6 +13,8 @@ import MyPage from './pages/MyPage.jsx';
 import AdminPage from './pages/AdminPage.jsx';
 import AdminFormPage from './pages/AdminFormPage.jsx';
 import AdminRouteBulkPage from './pages/AdminRouteBulkPage.jsx';
+// 엑셀 파서(xlsx)가 무거워 이 페이지만 지연 로딩(code-split) → 일반 사용자 번들에서 제외
+const AdminMountainBulkPage = lazy(() => import('./pages/AdminMountainBulkPage.jsx'));
 import PostWritePage from './pages/PostWritePage.jsx';
 import SearchResultsPage from './pages/SearchResultsPage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
@@ -43,6 +45,11 @@ export default function App() {
       <Routes>
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/admin/routes/bulk" element={<AdminRouteBulkPage />} />
+        <Route path="/admin/mountains/bulk" element={
+          <Suspense fallback={<div style={{ padding: 40, textAlign: 'center' }}>불러오는 중…</div>}>
+            <AdminMountainBulkPage />
+          </Suspense>
+        } />
         <Route path="/admin/:tab/new" element={<AdminFormPage />} />
         <Route path="/admin/:tab/:id/edit" element={<AdminFormPage />} />
         <Route path="/admin/:tab" element={<AdminPage />} />

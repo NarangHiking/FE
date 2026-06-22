@@ -120,7 +120,8 @@ function UsersTable({ users }) {
 function MountainsTable({ mountains, onDelete }) {
   return (
     <div className="data-card">
-      <DataHead title="산 목록" action="+ 산 등록" to="/admin/mountains/new" />
+      <DataHead title="산 목록" action="+ 산 등록" to="/admin/mountains/new"
+        extra={<Link className="btn sm" to="/admin/mountains/bulk">⬆ 엑셀 등록</Link>} />
       <table className="table">
         <thead>
           <tr>
