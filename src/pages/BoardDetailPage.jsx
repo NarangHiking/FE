@@ -16,6 +16,7 @@ export default function BoardDetailPage() {
   // ── 댓글 입력 상태 ────────────────────────────────────────
   const [commentText, setCommentText]   = useState('');
   const [commentLoading, setCommentLoading] = useState(false);
+  const [commentPage, setCommentPage]   = useState(1); // 댓글 페이지
 
   // ── 댓글 수정 상태 ────────────────────────────────────────
   const [editingId, setEditingId] = useState(null);  // 수정 중인 댓글 id
@@ -116,6 +117,12 @@ export default function BoardDetailPage() {
   const comments = [...(post.comments ?? [])].sort(
     (a, b) => String(a.createdAt).localeCompare(String(b.createdAt)) || (a.id - b.id),
   );
+  // 댓글 페이지네이션 (한 페이지 10개)
+  const C_SIZE = 10;
+  const cTotal = Math.max(1, Math.ceil(comments.length / C_SIZE));
+  const cCur   = Math.min(commentPage, cTotal);
+  const cItems = comments.slice((cCur - 1) * C_SIZE, cCur * C_SIZE);
+  const cNums  = (() => { const a = []; const s = Math.max(1, cCur - 2); const e = Math.min(cTotal, s + 4); for (let i = s; i <= e; i++) a.push(i); return a; })();
 
   return (
     <div className="wrap">
@@ -166,7 +173,7 @@ export default function BoardDetailPage() {
         {/* 댓글 목록 */}
         {comments.length === 0
           ? <p style={{ color: 'var(--ink-soft)', padding: '12px 0' }}>첫 댓글을 남겨보세요.</p>
-          : comments.map((c) => (
+          : cItems.map((c) => (
             <div key={c.id} className="comment-item">
               <div className="comment-top">
                 <span className="comment-author">{c.name}</span>
@@ -201,6 +208,17 @@ export default function BoardDetailPage() {
             </div>
           ))
         }
+
+        {/* 댓글 페이지네이션 — 2페이지 이상일 때만 */}
+        {cTotal > 1 && (
+          <div className="pagination" style={{ margin: '16px 0 0' }}>
+            <span className={'pg ghost' + (cCur === 1 ? ' disabled' : '')} onClick={() => cCur > 1 && setCommentPage(cCur - 1)}>←</span>
+            {cNums.map((n) => (
+              <span key={n} className={'pg' + (n === cCur ? ' on' : '')} onClick={() => setCommentPage(n)}>{n}</span>
+            ))}
+            <span className={'pg ghost' + (cCur === cTotal ? ' disabled' : '')} onClick={() => cCur < cTotal && setCommentPage(cCur + 1)}>→</span>
+          </div>
+        )}
 
         {/* 댓글 작성 — 로그인 시에만 */}
         {user

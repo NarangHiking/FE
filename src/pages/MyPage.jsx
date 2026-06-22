@@ -1,24 +1,47 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth, apiFetch } from '../context/AuthContext.jsx';
 
 const TABS = ['저장한 코스', '내가 쓴 글'];
+const PAGE_SIZE = 10;
+
+function pageNums(page, totalPages) {
+  const nums = []; const start = Math.max(1, page - 2); const end = Math.min(totalPages, start + 4);
+  for (let i = start; i <= end; i++) nums.push(i); return nums;
+}
+function Pager({ page, totalPages, onPage }) {
+  if (totalPages <= 1) return null;
+  return (
+    <div className="pagination" style={{ margin: '18px 0 0' }}>
+      <span className={'pg ghost' + (page === 1 ? ' disabled' : '')} onClick={() => page > 1 && onPage(page - 1)}>←</span>
+      {pageNums(page, totalPages).map((n) => (
+        <span key={n} className={'pg' + (n === page ? ' on' : '')} onClick={() => onPage(n)}>{n}</span>
+      ))}
+      <span className={'pg ghost' + (page === totalPages ? ' disabled' : '')} onClick={() => page < totalPages && onPage(page + 1)}>→</span>
+    </div>
+  );
+}
 
 export default function MyPage() {
   const { user } = useAuth();
   const navigate  = useNavigate();
 
-  const [tab, setTab] = useState('저장한 코스');
+  // 탭을 URL(?tab=)에 저장 → 글 보고 뒤로가기 해도 같은 탭 유지
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tab = searchParams.get('tab') === 'posts' ? '내가 쓴 글' : '저장한 코스';
+  const setTab = (t) => setSearchParams(t === '내가 쓴 글' ? { tab: 'posts' } : {}, { replace: true });
 
   // ── 저장한 코스 상태 ──────────────────────────────────────
   const [favorites, setFavorites] = useState([]);
   const [favLoading, setFavLoading] = useState(true);
   const [favError, setFavError]   = useState('');
+  const [favPage, setFavPage]     = useState(1);
 
   // ── 내가 쓴 글 상태 ───────────────────────────────────────
   const [myPosts, setMyPosts]     = useState([]);
   const [postsLoading, setPostsLoading] = useState(true);
   const [postsError, setPostsError]     = useState('');
+  const [postPage, setPostPage]   = useState(1);
 
   // ── 비로그인 → /login 리다이렉트 ─────────────────────────
   useEffect(() => {
@@ -56,6 +79,14 @@ export default function MyPage() {
   }, [user]);
 
   if (!user) return null; // 리다이렉트 중
+
+  // 페이지 슬라이스 (데이터 감소 시 현재 페이지 보정)
+  const favTotal = Math.max(1, Math.ceil(favorites.length / PAGE_SIZE));
+  const favCur   = Math.min(favPage, favTotal);
+  const favItems = favorites.slice((favCur - 1) * PAGE_SIZE, favCur * PAGE_SIZE);
+  const postTotal = Math.max(1, Math.ceil(myPosts.length / PAGE_SIZE));
+  const postCur   = Math.min(postPage, postTotal);
+  const postItems = myPosts.slice((postCur - 1) * PAGE_SIZE, postCur * PAGE_SIZE);
 
   return (
     <div className="wrap">
@@ -103,7 +134,7 @@ export default function MyPage() {
               <div className="thead" style={{ gridTemplateColumns: '1fr 120px 80px' }}>
                 <span>코스명</span><span>산</span><span>추천수</span>
               </div>
-              {favorites.map((f) => (
+              {favItems.map((f) => (
                 <Link
                   key={f.id}
                   className="board-row"
@@ -117,6 +148,7 @@ export default function MyPage() {
               ))}
             </div>
           )}
+          <Pager page={favCur} totalPages={favTotal} onPage={setFavPage} />
         </div>
       )}
 
@@ -135,7 +167,7 @@ export default function MyPage() {
               <div className="thead">
                 <span>작성자</span><span>제목</span><span>작성</span><span>댓글</span>
               </div>
-              {myPosts.map((p) => (
+              {postItems.map((p) => (
                 <Link key={p.id} className="board-row" to={`/board/${p.id}`}>
                   <span className="b-meta">{p.name}</span>
                   <span className="b-title">
@@ -148,6 +180,7 @@ export default function MyPage() {
               ))}
             </div>
           )}
+          <Pager page={postCur} totalPages={postTotal} onPage={setPostPage} />
         </div>
       )}
     </div>

@@ -16,12 +16,12 @@
 
 .field { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
 .field.full { grid-column: 1 / -1; }
-.field > label { font-family: var(--font-mono); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink-soft); display: flex; align-items: center; gap: 5px; }
+.field > label { font-family: var(--font-mono); font-size: 12.5px; letter-spacing: 0.5px; text-transform: uppercase; color: var(--ink-2); display: flex; align-items: center; gap: 5px; }
 .field > label .req { color: var(--pop); font-size: 13px; }
 
 .inp {
   width: 100%; border: 2px solid var(--ink); border-radius: 10px; background: var(--paper);
-  font-family: var(--font-body); font-size: 15px; color: var(--ink); padding: 11px 13px; outline: none;
+  font-family: var(--font-body); font-size: 16px; color: var(--ink); padding: 12px 14px; outline: none;
   transition: box-shadow .1s, border-color .1s;
 }
 .inp::placeholder { color: var(--ink-soft); }
@@ -30,7 +30,7 @@ select.inp { appearance: none; cursor: pointer; background-image: url("data:imag
 textarea.inp { min-height: 220px; resize: vertical; line-height: 1.6; }
 textarea.inp.tall { min-height: 320px; }
 
-.field .hint { font-family: var(--font-mono); font-size: 11px; color: var(--ink-soft); }
+.field .hint { font-family: var(--font-mono); font-size: 12px; color: var(--ink-soft); }
 
 /* input with leading addon (예: 거리 km) */
 .inp-row { display: flex; align-items: stretch; border: 2px solid var(--ink); border-radius: 10px; overflow: hidden; background: var(--paper); }

@@ -68,7 +68,7 @@ export default function App() {
   }
 
   return (
-    <>
+    <div className="app-shell">
       <Header />
       <main>
         <Routes>
@@ -89,6 +89,6 @@ export default function App() {
         </Routes>
       </main>
       {!isDetail && <Footer />}
-    </>
+    </div>
   );
 }

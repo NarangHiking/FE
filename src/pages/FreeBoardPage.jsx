@@ -52,12 +52,14 @@ export default function FreeBoardPage() {
   return (
     <div className="wrap">
       <div className="crumb">
-        <Link to="/">홈</Link><span className="sep">/</span><span className="here">게시판</span>
+        <Link to="/">홈</Link><span className="sep">/</span>
+        <Link to="/board">게시판</Link><span className="sep">/</span>
+        <span className="here">자유게시판</span>
       </div>
 
       <div className="page-head">
-        <div className="eyebrow">COMMUNITY BOARD</div>
-        <h1>커뮤니티</h1>
+        <div className="eyebrow">FREE BOARD</div>
+        <h1>자유게시판</h1>
         <p className="desc">등산러들이 후기·질문·정보를 나누는 공간입니다.</p>
       </div>
 

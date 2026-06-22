@@ -6,7 +6,6 @@ import { apiFetch } from '../context/AuthContext.jsx';
 
 const PALETTES = ['forest', 'moss', 'alpine', 'dusk', 'mist', 'dawn'];
 const PAGE_SIZE = 12; // 한 페이지에 표시할 산 카드 수
-const SORTS = ['인기순', '최신순'];
 
 // BE Mtn → FE 카드 포맷 변환 (거리/시간/난이도는 사용하지 않음 → 카드는 고도/위치 표시)
 function toCard(mtn, index) {
@@ -30,7 +29,6 @@ export default function MountainListPage() {
   const [keyword, setKeyword] = useState('');
   // 메인 지역 칩에서 넘어온 ?region= 값을 초기값으로 사용
   const [region, setRegion]   = useState(searchParams.get('region') ?? '전체');
-  const [sort, setSort]       = useState('인기순');
   const [page, setPage]       = useState(1); // 현재 페이지 (1-based)
 
   // ── API 호출 ──────────────────────────────────────────────
@@ -109,14 +107,9 @@ export default function MountainListPage() {
         </div>
       </div>
 
-      {/* 정렬 / 개수 */}
+      {/* 개수 */}
       <div className="list-toolbar">
         <div className="count"><b>{filtered.length}</b> 개의 산</div>
-        <div className="sort-pills">
-          {SORTS.map((s) => (
-            <span key={s} className={'chip' + (sort === s ? ' on' : '')} onClick={() => setSort(s)}>{s}</span>
-          ))}
-        </div>
       </div>
 
       {/* 상태 표시 */}

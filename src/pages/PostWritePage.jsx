@@ -215,7 +215,7 @@ export default function PostWritePage() {
               <Field label="제목" required full>
                 <TextInput
                   placeholder={c.placeholder}
-                  maxLength={80}
+                  maxLength={50}
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                 />

@@ -263,6 +263,13 @@ export default function MountainDetailPage() {
     if (el) el.scrollTop = el.scrollHeight;
   }, [chatMsgs, chatBusy, aiOpen]);
 
+  // 다른 산 상세로 이동하면 화면의 대화 내용 초기화 (산마다 새 대화)
+  useEffect(() => {
+    setChatMsgs([]);
+    setChatInput('');
+    setChatBusy(false);
+  }, [id]);
+
   // 단기예보(최대 3일) → 일자별 그룹 + 일 최저/최고 + 3시간 간격 슬롯
   const byDay = useMemo(() => {
     const map = new Map();
@@ -378,7 +385,11 @@ export default function MountainDetailPage() {
                 <label className="cmt-file">
                   📷 사진{cmtFiles.length > 0 ? ` ${cmtFiles.length}` : ''}
                   <input ref={fileRef} type="file" accept="image/*" multiple hidden
-                    onChange={(e) => setCmtFiles(Array.from(e.target.files))} />
+                    onChange={(e) => {
+                      const picked = Array.from(e.target.files);
+                      if (picked.length > 5) alert('사진은 최대 5장까지 첨부할 수 있어요.');
+                      setCmtFiles(picked.slice(0, 5));
+                    }} />
                 </label>
                 <button className="btn pop sm" type="submit" disabled={cmtBusy || !route}>
                   {cmtBusy ? '등록 중…' : '댓글 등록'}
