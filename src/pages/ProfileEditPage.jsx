@@ -16,7 +16,7 @@ export default function ProfileEditPage() {
   const [error, setError] = useState('');
 
   // 비로그인 → 로그인으로
-  useEffect(() => { if (!user) navigate('/login'); }, [user, navigate]);
+  useEffect(() => { if (!user) navigate('/login', { replace: true }); }, [user, navigate]);
   // 유저 로드되면 닉네임 prefill
   useEffect(() => { if (user) setName(user.name ?? ''); }, [user]);
 

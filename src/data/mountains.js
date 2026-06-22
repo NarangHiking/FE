@@ -37,6 +37,25 @@ export function getMountain(id) {
   return MOUNTAINS.find((m) => String(m.id) === String(id)) || MOUNTAINS[0];
 }
 
+// 광역 지역명(REGIONS.name) → 산 location 에 들어가는 세부 지명 접두사 매핑.
+// 예) '충청' 칩 ↔ location '충북 단양' / '충남 …' 매칭.
+const REGION_PREFIXES = {
+  서울: ['서울'],
+  경기: ['경기', '인천'],
+  강원: ['강원'],
+  충청: ['충북', '충남', '대전', '세종'],
+  경상: ['경북', '경남', '대구', '울산', '부산'],
+  전라: ['전북', '전남', '광주'],
+  제주: ['제주'],
+};
+
+// 산 location 이 특정 광역 지역에 속하는지 판정
+export function matchesRegion(location, regionName) {
+  if (!location) return false;
+  const prefixes = REGION_PREFIXES[regionName] ?? [regionName];
+  return prefixes.some((p) => location.includes(p));
+}
+
 // BE Mtn(GET /api/mtn/list: {id,name,location,height,description,...}) → MountainCard 표시용.
 // 거리/소요/난이도는 코스(track) 단위라 카드에선 고도/위치로 대체.
 const CARD_PAL = ['forest', 'moss', 'alpine', 'dusk', 'mist', 'dawn'];

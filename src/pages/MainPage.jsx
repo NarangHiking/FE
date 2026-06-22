@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import MountainScene from '../components/MountainScene.jsx';
 import MountainCard from '../components/MountainCard.jsx';
-import { REGIONS, mtnToCard } from '../data/mountains.js';
+import { REGIONS, mtnToCard, matchesRegion } from '../data/mountains.js';
 import { apiFetch } from '../context/AuthContext.jsx';
 
 const QUICK = ['북한산', '관악산', '서울 근교', '당일치기', '초보 코스'];
@@ -32,6 +32,24 @@ export default function MainPage() {
       .catch(() => {});
   }, []);
   const featured = mtns[0];
+
+  // 코스(track) 목록 — 전체/지역별 코스 수 집계용 (GET /api/track)
+  const [tracks, setTracks] = useState([]);
+  useEffect(() => {
+    apiFetch('/api/track')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => { if (json) setTracks(json.data ?? json); })
+      .catch(() => {});
+  }, []);
+
+  // 산 id → location 맵 → 코스의 소속 지역 판정에 사용
+  const mtnById = useMemo(
+    () => Object.fromEntries((mtns ?? []).map((m) => [m.id, m])),
+    [mtns],
+  );
+  // 지역별 코스 수 (해당 지역 산에 속한 트랙 수)
+  const regionCount = (regionName) =>
+    (tracks ?? []).filter((t) => matchesRegion(mtnById[t.mountainId]?.location, regionName)).length;
 
   const onSearch = (e) => {
     e.preventDefault();
@@ -157,14 +175,14 @@ export default function MainPage() {
             </div>
             <div className="regions">
               {REGIONS.map((r) => (
-                <Link key={r.name} className="region-chip" to="/mountains">
+                <Link key={r.name} className="region-chip" to={`/mountains?region=${encodeURIComponent(r.name)}`}>
                   <span className="rn">{r.name}</span>
-                  <span className="rc">{r.count} courses</span>
+                  <span className="rc">{regionCount(r.name)} courses</span>
                 </Link>
               ))}
             </div>
             <div className="pfoot">
-              <span className="mono" style={{ fontSize: 12, color: 'var(--ink-soft)' }}>전국 369개 코스 등록됨</span>
+              <span className="mono" style={{ fontSize: 12, color: 'var(--ink-soft)' }}>전국 {tracks.length}개 코스 등록됨</span>
               <Link className="btn sm" to="/mountains">전체 보기</Link>
             </div>
           </div>

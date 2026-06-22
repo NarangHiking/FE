@@ -355,7 +355,9 @@ export default function MountainDetailPage() {
           {comments.length === 0 ? (
             <p className="md-cmt-empty">아직 이 코스에 댓글이 없어요. 첫 후기를 남겨보세요!</p>
           ) : (
-            comments.map((c) => (
+            [...comments]
+              .sort((a, b) => String(a.createdAt).localeCompare(String(b.createdAt)) || (a.id - b.id))
+              .map((c) => (
               <div className="review-item" key={c.id}>
                 <div className="rtop">
                   <div className="rav">{(c.name ?? '?').slice(0, 1)}</div>

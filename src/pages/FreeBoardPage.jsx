@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { apiFetch } from '../context/AuthContext.jsx';
 
-const SORTS    = ['최신순', '인기순', '댓글순'];
 const PAGE_SIZE = 15; // 한 페이지에 표시할 게시글 수
 
 export default function FreeBoardPage() {
@@ -10,7 +9,6 @@ export default function FreeBoardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState('');
   const [keyword, setKeyword] = useState('');
-  const [sort, setSort]       = useState('최신순');
   const [page, setPage]       = useState(1); // 현재 페이지 (1-based)
 
   const [input, setInput] = useState('');
@@ -33,9 +31,14 @@ export default function FreeBoardPage() {
 
   const search = () => setKeyword(input);
 
+  // 항상 최신순(작성 시각 내림차순, 동일 시 id 내림차순)으로 표시
+  const sortedPosts = [...posts].sort(
+    (a, b) => String(b.createdAt).localeCompare(String(a.createdAt)) || (b.id - a.id),
+  );
+
   // ── 페이지네이션 계산 ─────────────────────────────────────
-  const totalPages  = Math.max(1, Math.ceil(posts.length / PAGE_SIZE));
-  const pagePosts   = posts.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages  = Math.max(1, Math.ceil(sortedPosts.length / PAGE_SIZE));
+  const pagePosts   = sortedPosts.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   // 페이지 번호 목록: 현재 페이지 기준 앞뒤 2개씩, 최대 5개
   function getPageNums() {
@@ -65,11 +68,7 @@ export default function FreeBoardPage() {
 
       <div className="board-shell">
         <div className="board-toolbar">
-          <div className="left">
-            {SORTS.map((s) => (
-              <span key={s} className={'chip' + (sort === s ? ' on' : '')} onClick={() => setSort(s)}>{s}</span>
-            ))}
-          </div>
+          <div className="left" />
           <div className="left">
             <div className="search-mini">
               <span>🔍</span>
@@ -110,8 +109,8 @@ export default function FreeBoardPage() {
           </div>
         )}
 
-        {/* 페이지네이션 */}
-        {!loading && !error && (
+        {/* 페이지네이션 — 페이지가 2개 이상일 때만 표시 */}
+        {!loading && !error && totalPages > 1 && (
           <div className="pagination">
             <span
               className={'pg ghost' + (page === 1 ? ' disabled' : '')}

@@ -40,7 +40,7 @@
 /* 트랙별 댓글 */
 .cmt-track-label { font-family: var(--font-mono); font-size: 11px; color: var(--forest-deep); background: var(--sky); border: 1.5px solid var(--forest-deep); border-radius: 999px; padding: 3px 11px; display: inline-block; margin: 4px 0 14px; }
 .md-cmt-form { display: flex; flex-direction: column; gap: 8px; border: 2px solid var(--ink); border-radius: 12px; background: var(--paper); padding: 12px; margin-bottom: 16px; }
-.md-cmt-form textarea { width: 100%; border: 2px solid var(--ink); border-radius: 9px; background: var(--card); font-family: var(--font-body); font-size: 14px; line-height: 1.5; padding: 9px; outline: none; resize: vertical; min-height: 52px; }
+.md-cmt-form textarea { width: 100%; border: 2px solid var(--ink); border-radius: 9px; background: var(--card); font-family: var(--font-body); font-size: 14px; line-height: 1.5; padding: 9px; outline: none; resize: none; min-height: 52px; }
 .md-cmt-form textarea:focus { border-color: var(--pop); box-shadow: 2px 2px 0 var(--pop); }
 .md-cmt-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .cmt-file { font-family: var(--font-mono); font-size: 12px; border: 1.5px solid var(--ink); background: var(--card); border-radius: 8px; padding: 5px 10px; cursor: pointer; box-shadow: 1.5px 1.5px 0 var(--ink); }

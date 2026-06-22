@@ -17,6 +17,10 @@ export default function BoardDetailPage() {
   const [commentText, setCommentText]   = useState('');
   const [commentLoading, setCommentLoading] = useState(false);
 
+  // ── 댓글 수정 상태 ────────────────────────────────────────
+  const [editingId, setEditingId] = useState(null);  // 수정 중인 댓글 id
+  const [editText, setEditText]   = useState('');
+
   // ── 게시글 조회: GET /api/board/{id} ────────────────────
   useEffect(() => {
     setLoading(true);
@@ -65,6 +69,27 @@ export default function BoardDetailPage() {
     }
   }
 
+  // ── 댓글 수정: PATCH /api/board/{id}/comment/{commentId} ──
+  // BE: BoardCommentRequest { content: string }
+  async function handleCommentEdit(commentId) {
+    if (!editText.trim()) return;
+    const res = await apiFetch(`/api/board/${id}/comment/${commentId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ content: editText }),
+    });
+    if (res.ok) {
+      setPost((prev) => ({
+        ...prev,
+        comments: (prev.comments ?? []).map((c) =>
+          c.id === commentId ? { ...c, content: editText } : c),
+      }));
+      setEditingId(null);
+      setEditText('');
+    } else {
+      alert('댓글 수정에 실패했습니다.');
+    }
+  }
+
   // ── 댓글 삭제: DELETE /api/board/{id}/comment/{commentId} ──
   async function handleCommentDelete(commentId) {
     if (!window.confirm('댓글을 삭제하시겠습니까?')) return;
@@ -87,7 +112,10 @@ export default function BoardDetailPage() {
 
   const isAuthor = user && user.name === post.name; // 작성자 본인 여부
   const backPath = post.category === 'feedback' ? '/suggestions' : '/board';
-  const comments = post.comments ?? [];
+  // 댓글은 오래된 순(작성 시각 오름차순, 동일 시 id 오름차순)으로 표시
+  const comments = [...(post.comments ?? [])].sort(
+    (a, b) => String(a.createdAt).localeCompare(String(b.createdAt)) || (a.id - b.id),
+  );
 
   return (
     <div className="wrap">
@@ -143,12 +171,33 @@ export default function BoardDetailPage() {
               <div className="comment-top">
                 <span className="comment-author">{c.name}</span>
                 <span className="comment-date">{c.createdAt}</span>
-                {/* 내 댓글만 삭제 버튼 */}
-                {user && user.name === c.name && (
-                  <button className="comment-delete" onClick={() => handleCommentDelete(c.id)}>삭제</button>
+                {/* 내 댓글만 수정/삭제 버튼 */}
+                {user && user.name === c.name && editingId !== c.id && (
+                  <span style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+                    <button className="comment-delete" style={{ marginLeft: 0 }}
+                      onClick={() => { setEditingId(c.id); setEditText(c.content); }}>수정</button>
+                    <button className="comment-delete" style={{ marginLeft: 0 }}
+                      onClick={() => handleCommentDelete(c.id)}>삭제</button>
+                  </span>
                 )}
               </div>
-              <div className="comment-body">{c.content}</div>
+              {editingId === c.id ? (
+                <div className="comment-edit" style={{ marginTop: 8 }}>
+                  <textarea
+                    value={editText}
+                    onChange={(e) => setEditText(e.target.value)}
+                    rows={3}
+                    maxLength={10000}
+                    style={{ width: '100%', border: '2px solid var(--ink)', borderRadius: 10, padding: 10, fontFamily: 'var(--font-body)', fontSize: 15, resize: 'none', outline: 'none' }}
+                  />
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 6 }}>
+                    <button className="btn sm ghost" onClick={() => { setEditingId(null); setEditText(''); }}>취소</button>
+                    <button className="btn sm pop" onClick={() => handleCommentEdit(c.id)}>저장</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="comment-body">{c.content}</div>
+              )}
             </div>
           ))
         }

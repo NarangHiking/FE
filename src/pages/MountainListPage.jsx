@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import MountainCard from '../components/MountainCard.jsx';
-import { REGIONS } from '../data/mountains.js';
+import { REGIONS, matchesRegion } from '../data/mountains.js';
 import { apiFetch } from '../context/AuthContext.jsx';
 
 const PALETTES = ['forest', 'moss', 'alpine', 'dusk', 'mist', 'dawn'];
+const PAGE_SIZE = 12; // 한 페이지에 표시할 산 카드 수
 const DIFFS = ['전체', '초급', '중급', '상급'];
 const DISTS = ['전체', '5km 이하', '5~10km', '10km 이상'];
 const SORTS = ['인기순', '최신순', '거리순', '난이도순'];
@@ -32,11 +33,14 @@ export default function MountainListPage() {
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState('');
 
+  const [searchParams] = useSearchParams();
   const [keyword, setKeyword] = useState('');
-  const [region, setRegion]   = useState('전체');
+  // 메인 지역 칩에서 넘어온 ?region= 값을 초기값으로 사용
+  const [region, setRegion]   = useState(searchParams.get('region') ?? '전체');
   const [diff, setDiff]       = useState('전체');
   const [dist, setDist]       = useState('전체');
   const [sort, setSort]       = useState('인기순');
+  const [page, setPage]       = useState(1); // 현재 페이지 (1-based)
 
   // ── API 호출 ──────────────────────────────────────────────
   // useEffect: 컴포넌트가 처음 마운트될 때 한 번 실행
@@ -60,11 +64,26 @@ export default function MountainListPage() {
   const filtered = useMemo(() => {
     return mountains.filter((m) => {
       if (keyword && !m.name.includes(keyword)) return false;
-      if (region !== '전체' && !m.region.includes(region)) return false;
+      if (region !== '전체' && !matchesRegion(m.region, region)) return false;
       return true;
       // diff·dist 필터는 Track 데이터 연동 후 추가 예정
     });
   }, [mountains, keyword, region]);
+
+  // ── 페이지네이션 계산 ─────────────────────────────────────
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  // 필터/검색이 바뀌어 현재 페이지가 범위를 벗어나면 1페이지로 보정
+  useEffect(() => { setPage(1); }, [keyword, region]);
+  const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+
+  // 현재 페이지 기준 앞뒤 2개씩, 최대 5개의 페이지 번호
+  function getPageNums() {
+    const nums = [];
+    const start = Math.max(1, page - 2);
+    const end   = Math.min(totalPages, start + 4);
+    for (let i = start; i <= end; i++) nums.push(i);
+    return nums;
+  }
 
   return (
     <div className="wrap">
@@ -127,20 +146,35 @@ export default function MountainListPage() {
       {/* 카드 그리드 */}
       {!loading && !error && (
         <div className="grid" style={{ marginBottom: 10 }}>
-          {filtered.map((m, i) => (
-            <MountainCard key={m.id} m={m} sceneVariant={i + 21} showRank={false} />
-          ))}
+          {pageItems.length === 0
+            ? <p style={{ textAlign: 'center', padding: 40, color: 'var(--ink-soft)', gridColumn: '1 / -1' }}>조건에 맞는 산이 없습니다.</p>
+            : pageItems.map((m, i) => (
+              <MountainCard key={m.id} m={m} sceneVariant={i + 21} showRank={false} />
+            ))
+          }
         </div>
       )}
 
-      {/* 페이지네이션 */}
-      <div className="pagination">
-        <span className="pg ghost">←</span>
-        {[1, 2, 3, 4, 5].map((n) => (
-          <span key={n} className={'pg' + (n === 1 ? ' on' : '')}>{n}</span>
-        ))}
-        <span className="pg ghost">→</span>
-      </div>
+      {/* 페이지네이션 — 페이지가 2개 이상일 때만 표시 */}
+      {!loading && !error && totalPages > 1 && (
+        <div className="pagination">
+          <span
+            className={'pg ghost' + (page === 1 ? ' disabled' : '')}
+            onClick={() => page > 1 && setPage(page - 1)}
+          >←</span>
+          {getPageNums().map((n) => (
+            <span
+              key={n}
+              className={'pg' + (n === page ? ' on' : '')}
+              onClick={() => setPage(n)}
+            >{n}</span>
+          ))}
+          <span
+            className={'pg ghost' + (page === totalPages ? ' disabled' : '')}
+            onClick={() => page < totalPages && setPage(page + 1)}
+          >→</span>
+        </div>
+      )}
     </div>
   );
 }

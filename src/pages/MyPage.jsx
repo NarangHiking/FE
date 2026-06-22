@@ -22,7 +22,7 @@ export default function MyPage() {
 
   // ── 비로그인 → /login 리다이렉트 ─────────────────────────
   useEffect(() => {
-    if (!user) navigate('/login');
+    if (!user) navigate('/login', { replace: true });
   }, [user, navigate]);
 
   // ── 저장한 코스: GET /api/favorite/track ─────────────────

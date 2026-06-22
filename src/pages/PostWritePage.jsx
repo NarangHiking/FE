@@ -181,10 +181,11 @@ export default function PostWritePage() {
                 <Select value={cat} options={c.cats} onChange={(e) => setCat(e.target.value)} />
               </Field>
 
+              {kind === 'suggestions' && (
               <Field
                 label="대상 코스"
-                required={kind === 'suggestions'}
-                hint={kind === 'suggestions' ? '건의는 대상 코스를 검색해 선택하세요' : '관련 코스가 있으면 검색해 선택'}
+                required
+                hint="건의는 대상 코스를 검색해 선택하세요"
                 full
               >
                 {selectedTrack ? (
@@ -216,6 +217,7 @@ export default function PostWritePage() {
                   </div>
                 )}
               </Field>
+              )}
 
               <Field label="제목" required full>
                 <TextInput
@@ -226,11 +228,12 @@ export default function PostWritePage() {
                 />
               </Field>
 
-              <Field label="내용" required full hint="최대 10,000자">
+              <Field label="내용" required full hint={`${content.length.toLocaleString()} / 10,000자`}>
                 <Textarea
                   tall
                   placeholder={c.bodyPlaceholder}
                   value={content}
+                  maxLength={10000}
                   onChange={(e) => setContent(e.target.value)}
                 />
               </Field>

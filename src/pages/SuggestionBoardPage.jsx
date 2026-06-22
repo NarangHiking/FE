@@ -82,7 +82,6 @@ export default function SuggestionBoardPage() {
                 onKeyDown={(e) => e.key === 'Enter' && search()}
               />
             </div>
-            <Link className="btn pop sm" to="/suggestions/write">✏ 건의하기</Link>
           </div>
         </div>
 
@@ -112,7 +111,7 @@ export default function SuggestionBoardPage() {
           </div>
         )}
 
-        {!loading && !error && (
+        {!loading && !error && totalPages > 1 && (
           <div className="pagination">
             <span
               className={'pg ghost' + (page === 1 ? ' disabled' : '')}
