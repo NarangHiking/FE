@@ -69,6 +69,12 @@ export default function MountainDetailPage() {
   const [aiOpen, setAiOpen] = useState(false); // 처음엔 닫힌 상태(FAB만 표시)
   const [imgOk, setImgOk] = useState(true); // 대표 이미지 로드 성공 여부
 
+  // 챗봇(RAG) — POST /api/chat { message } → ApiResult<String>(data=답변 텍스트), 로그인 필요
+  const [chatMsgs, setChatMsgs] = useState([]); // [{ role:'user'|'bot', text }]
+  const [chatInput, setChatInput] = useState('');
+  const [chatBusy, setChatBusy] = useState(false);
+  const aiBodyRef = useRef(null);
+
   // 날씨(시간대별) + 일출/일몰
   const [weather, setWeather] = useState([]);
   const [dayIdx, setDayIdx] = useState(0);
@@ -226,6 +232,37 @@ export default function MountainDetailPage() {
     else alert('댓글 삭제에 실패했습니다.');
   }
 
+  // ── 챗봇 질문 전송: POST /api/chat { message } ──
+  // 대화 맥락(최근 30분)은 서버(Redis)가 userId 기준으로 유지하므로 메시지 1건만 보낸다.
+  async function sendChat(text) {
+    const msg = (text ?? '').trim();
+    if (!msg || chatBusy) return;
+    if (!user) {
+      setChatMsgs((p) => [...p, { role: 'bot', text: '로그인하시면 코스를 추천해 드릴 수 있어요. 먼저 로그인해 주세요.' }]);
+      return;
+    }
+    setChatMsgs((p) => [...p, { role: 'user', text: msg }]);
+    setChatInput('');
+    setChatBusy(true);
+    try {
+      const res = await apiFetch('/api/chat', { method: 'POST', body: JSON.stringify({ message: msg }) });
+      if (!res.ok) throw new Error();
+      const json = await res.json();
+      const answer = json.data ?? json.message ?? '답변을 가져오지 못했어요.';
+      setChatMsgs((p) => [...p, { role: 'bot', text: answer }]);
+    } catch {
+      setChatMsgs((p) => [...p, { role: 'bot', text: '죄송해요, 답변 생성 중 문제가 발생했어요. 잠시 후 다시 시도해 주세요.' }]);
+    } finally {
+      setChatBusy(false);
+    }
+  }
+
+  // 새 메시지/로딩 시 대화창 맨 아래로 스크롤
+  useEffect(() => {
+    const el = aiBodyRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [chatMsgs, chatBusy, aiOpen]);
+
   // 단기예보(최대 3일) → 일자별 그룹 + 일 최저/최고 + 3시간 간격 슬롯
   const byDay = useMemo(() => {
     const map = new Map();
@@ -264,14 +301,10 @@ export default function MountainDetailPage() {
   const lat = mtn.lat ?? coord?.lat ?? 37.6586;
   const lng = mtn.lng ?? coord?.lng ?? 126.9779;
 
-  // ── AI 어시스턴트 (디자인용 정적 대화) ──
-  // TODO(AI): 실제 어시스턴트 연동(Claude API 등). BE 레포엔 없음 → 별도 AI 서비스 필요.
-  const aiMsgs = [
-    { role: 'bot', text: `${mtn.name}은(는) 서울 도심에서 가장 가까운 국립공원이에요. ${mtn.height}m가 최고봉이며, 주능선 코스가 가장 인기 있습니다. 왕복 약 4~5시간 소요됩니다.` },
-    { role: 'user', text: '준비물 알려줘' },
-    { role: 'bot', text: '필수 준비물로는 등산화, 등산스틱, 여벌 옷, 충분한 물(1인 1.5L 이상), 간식, 구급약, 지도 또는 GPS를 챙기시길 추천드려요!' },
-  ];
-  const aiChips = ['날씨 확인', '초보 코스 추천', '준비물 알려줘', `${mtn.name} 정보`];
+  // ── AI 어시스턴트 (RAG 챗봇, POST /api/chat 연동) ──
+  // 첫 인사말은 산 정보 기반 정적 메시지, 이후 대화는 chatMsgs(state)로 누적
+  const aiGreeting = `안녕하세요! ${mtn.name} 등산이 궁금하신가요? 코스 추천·준비물 등 무엇이든 물어보세요.`;
+  const aiChips = [`${mtn.name} 초보 코스 추천`, '가볍게 즐기기 좋은 코스', '준비물 알려줘', '소요시간 짧은 코스'];
 
   // 선택한 날의 시간대별 슬롯 + 선택 시각
   const wxDay = byDay[Math.min(dayIdx, Math.max(0, byDay.length - 1))] ?? null;
@@ -488,19 +521,27 @@ export default function MountainDetailPage() {
               </div>
               <button className="ai-x" onClick={() => setAiOpen(false)} title="닫기">✕</button>
             </div>
-            <div className="ai-body">
-              {aiMsgs.map((m, i) => (
+            <div className="ai-body" ref={aiBodyRef}>
+              <div className="ai-msg bot">{aiGreeting}</div>
+              {chatMsgs.map((m, i) => (
                 <div key={i} className={'ai-msg ' + m.role}>{m.text}</div>
               ))}
+              {chatBusy && <div className="ai-msg bot ai-typing">답변 생성 중…</div>}
             </div>
             <div className="ai-chips">
-              {aiChips.map((c) => <span key={c} className="chip">{c}</span>)}
+              {aiChips.map((c) => (
+                <span key={c} className="chip" onClick={() => sendChat(c)}>{c}</span>
+              ))}
             </div>
-            {/* TODO(AI): 입력/전송 → AI 어시스턴트 API 연동 */}
-            <div className="ai-input">
-              <input placeholder="궁금한 점을 물어보세요…" />
-              <button className="send" title="전송">➤</button>
-            </div>
+            <form className="ai-input" onSubmit={(e) => { e.preventDefault(); sendChat(chatInput); }}>
+              <input
+                placeholder={user ? '궁금한 점을 물어보세요…' : '로그인 후 이용할 수 있어요'}
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                disabled={chatBusy}
+              />
+              <button className="send" type="submit" title="전송" disabled={chatBusy || !chatInput.trim()}>➤</button>
+            </form>
           </div>
         ) : (
           <button className="md-ai-fab" onClick={() => setAiOpen(true)} title="AI 어시스턴트 열기">💬</button>
