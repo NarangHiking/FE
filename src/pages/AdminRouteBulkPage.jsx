@@ -7,12 +7,14 @@ import { apiFetch } from '../context/AuthContext.jsx';
 // tracks(JSON 배열) + files(같은 순서). BE가 트랜잭션 처리(하나라도 실패 시 전부 롤백).
 const ST = { wait: 'wait', up: 'review', done: 'done', fail: 'reject' };
 const ST_LABEL = { wait: '대기', up: '업로드중', done: '완료', fail: '실패' };
+const PAGE_SIZE = 8; // 한 페이지에 표시할 행 수
 
 export default function AdminRouteBulkPage() {
   const [mountains, setMountains] = useState([]);
   const [defaultMtn, setDefaultMtn] = useState('');
   const [rows, setRows] = useState([]); // {id, file, name, mountainId, status, msg}
   const [running, setRunning] = useState(false);
+  const [page, setPage] = useState(1); // 현재 페이지 (1-based)
 
   useEffect(() => {
     apiFetch('/api/mtn/list')
@@ -37,7 +39,9 @@ export default function AdminRouteBulkPage() {
       status: 'wait',
       msg: '',
     }));
-    setRows((prev) => [...prev, ...arr]);
+    // 최근에 추가한 파일이 위로 오도록 앞에 붙이고, 1페이지로 이동
+    setRows((prev) => [...arr, ...prev]);
+    setPage(1);
   }
 
   const applyMtnToAll = () => setRows((prev) => prev.map((r) => (r.status === 'done' ? r : { ...r, mountainId: defaultMtn })));
@@ -72,6 +76,19 @@ export default function AdminRouteBulkPage() {
   const total = rows.length;
   const done = rows.filter((r) => r.status === 'done').length;
   const fail = rows.filter((r) => r.status === 'fail').length;
+
+  // ── 페이지네이션 ──────────────────────────────────────────
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const curPage    = Math.min(page, totalPages); // 행 제거로 범위를 벗어나면 보정
+  const pageRows   = rows.slice((curPage - 1) * PAGE_SIZE, curPage * PAGE_SIZE);
+
+  function getPageNums() {
+    const nums = [];
+    const start = Math.max(1, curPage - 2);
+    const end   = Math.min(totalPages, start + 4);
+    for (let i = start; i <= end; i++) nums.push(i);
+    return nums;
+  }
 
   return (
     <AdminLayout active="routes" title="경로 일괄 등록" sub="BULK ROUTE UPLOAD">
@@ -115,7 +132,7 @@ export default function AdminRouteBulkPage() {
             <p style={{ textAlign: 'center', color: 'var(--ink-soft)', padding: 12 }}>아직 추가된 파일이 없습니다.</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {rows.map((r) => (
+              {pageRows.map((r) => (
                 <div key={r.id} className="bulk-row">
                   <span className={'st-badge ' + ST[r.status]}>{ST_LABEL[r.status]}</span>
                   <span className="bulk-file" title={r.file.name}>📄 {r.file.name}</span>
@@ -129,6 +146,19 @@ export default function AdminRouteBulkPage() {
                   <button className="icon-btn danger" title="제거" onClick={() => removeRow(r.id)} disabled={running}>✕</button>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* 페이지네이션 — 2페이지 이상일 때만 */}
+          {totalPages > 1 && (
+            <div className="pagination" style={{ margin: '4px 0 0' }}>
+              <span className={'pg ghost' + (curPage === 1 ? ' disabled' : '')}
+                onClick={() => curPage > 1 && setPage(curPage - 1)}>←</span>
+              {getPageNums().map((n) => (
+                <span key={n} className={'pg' + (n === curPage ? ' on' : '')} onClick={() => setPage(n)}>{n}</span>
+              ))}
+              <span className={'pg ghost' + (curPage === totalPages ? ' disabled' : '')}
+                onClick={() => curPage < totalPages && setPage(curPage + 1)}>→</span>
             </div>
           )}
         </div>
