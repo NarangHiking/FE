@@ -289,6 +289,9 @@ export default function MountainDetailPage() {
           )}
           <div className="ht" />
           <div className="veil" />
+          {mtn.imageSource && heroImg && imgOk && (
+            <span className="md-hero-src">© {mtn.imageSource}</span>
+          )}
           <span className="ele-badge">↑ {mtn.height}m</span>
           <div className="hbody">
             <div className="heyebrow">{mtn.location} · NARANG TRAIL</div>

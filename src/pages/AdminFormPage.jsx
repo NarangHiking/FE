@@ -138,6 +138,9 @@ function MountainForm({ id, isEdit, list }) {
   const [location, setLocation] = useState('');
   const [height,   setHeight]   = useState('');
   const [description, setDescription] = useState(''); // TEXT NOT NULL
+  const [lat,      setLat]      = useState('');   // 위도
+  const [lng,      setLng]      = useState('');   // 경도
+  const [imageSource, setImageSource] = useState(''); // 사진 출처
   const [file,     setFile]     = useState(null); // 대표 이미지
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -153,6 +156,9 @@ function MountainForm({ id, isEdit, list }) {
         setLocation(m.location ?? '');
         setHeight(m.height ?? '');
         setDescription(m.description ?? '');
+        setLat(m.lat ?? '');
+        setLng(m.lng ?? '');
+        setImageSource(m.imageSource ?? '');
       })
       .catch(() => {});
   }, [id, isEdit]);
@@ -163,9 +169,13 @@ function MountainForm({ id, isEdit, list }) {
     setSubmitting(true);
     try {
       // 산 등록/수정은 multipart: @RequestPart Mtn mtn + @RequestPart(file) (이미지)
-      const mtn = isEdit
-        ? { id: Number(id), name, location, height: Number(height), description }
-        : { name, location, height: Number(height), description };
+      const base = {
+        name, location, height: Number(height), description,
+        lat: lat === '' ? null : Number(lat),
+        lng: lng === '' ? null : Number(lng),
+        imageSource: imageSource || null,
+      };
+      const mtn = isEdit ? { id: Number(id), ...base } : base;
       // ⚠ BE insert 가 file.getOriginalFilename() 을 null 체크 없이 호출 → 등록 시 이미지 필수
       if (!isEdit && !file) {
         setError('대표 이미지를 선택해주세요.');
@@ -201,6 +211,15 @@ function MountainForm({ id, isEdit, list }) {
       </Field>
       <Field label="최고 고도 (m)" required>
         <TextInput type="number" value={height} onChange={e => setHeight(e.target.value)} placeholder="836" />
+      </Field>
+      <Field label="위도 (lat)" hint="지도 중심 좌표 · 예: 37.6586">
+        <TextInput type="number" step="any" value={lat} onChange={e => setLat(e.target.value)} placeholder="37.6586" />
+      </Field>
+      <Field label="경도 (lng)" hint="예: 126.9779">
+        <TextInput type="number" step="any" value={lng} onChange={e => setLng(e.target.value)} placeholder="126.9779" />
+      </Field>
+      <Field label="사진 출처" hint="저작자/출처 표기 (선택)" full>
+        <TextInput value={imageSource} onChange={e => setImageSource(e.target.value)} placeholder="예: 산림청 / Unsplash @user" maxLength={255} />
       </Field>
       <Field label="설명" required hint="산 소개 (상세페이지에 표시)">
         <textarea className="inp" style={{ minHeight: 96 }} value={description}
