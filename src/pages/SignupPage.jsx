@@ -15,19 +15,9 @@ export default function SignupPage() {
   const [name, setName]         = useState('');
   const [pass, setPass]         = useState('');
   const [passConfirm, setPassConfirm] = useState('');
-  const [termsAll, setTermsAll] = useState(false);
-  const [term1, setTerm1]       = useState(false); // 이용약관
-  const [term2, setTerm2]       = useState(false); // 개인정보
 
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
-
-  // 전체 동의 토글
-  const toggleAll = (checked) => {
-    setTermsAll(checked);
-    setTerm1(checked);
-    setTerm2(checked);
-  };
 
   const onSubmit = async (e) => {
     e.preventDefault();
@@ -45,9 +35,6 @@ export default function SignupPage() {
     }
     if (pass !== passConfirm) {
       setError('비밀번호가 일치하지 않습니다.'); return;
-    }
-    if (!term1 || !term2) {
-      setError('필수 약관에 동의해 주세요.'); return;
     }
 
     setLoading(true);
@@ -128,32 +115,6 @@ export default function SignupPage() {
             <Field label="주로 가는 지역" hint="맞춤 추천에 사용 (선택)">
               <Select value={REGION_OPTIONS[0]} options={REGION_OPTIONS} />
             </Field>
-
-            {/* 약관 동의 */}
-            <div className="terms">
-              <label className="check all">
-                <input type="checkbox" checked={termsAll}
-                  onChange={(e) => toggleAll(e.target.checked)} />
-                전체 동의합니다
-              </label>
-              <label className="check row">
-                <span>
-                  <input type="checkbox" checked={term1}
-                    onChange={(e) => setTerm1(e.target.checked)} />
-                  <span className="req">[필수]</span> 이용약관 동의
-                </span>
-              </label>
-              <label className="check row">
-                <span>
-                  <input type="checkbox" checked={term2}
-                    onChange={(e) => setTerm2(e.target.checked)} />
-                  <span className="req">[필수]</span> 개인정보 수집·이용 동의
-                </span>
-              </label>
-              <label className="check row">
-                <span><input type="checkbox" /> [선택] 마케팅 정보 수신 동의</span>
-              </label>
-            </div>
 
             {error && <p className="form-error">{error}</p>}
 
