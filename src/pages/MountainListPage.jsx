@@ -6,12 +6,9 @@ import { apiFetch } from '../context/AuthContext.jsx';
 
 const PALETTES = ['forest', 'moss', 'alpine', 'dusk', 'mist', 'dawn'];
 const PAGE_SIZE = 12; // 한 페이지에 표시할 산 카드 수
-const DIFFS = ['전체', '초급', '중급', '상급'];
-const DISTS = ['전체', '5km 이하', '5~10km', '10km 이상'];
-const SORTS = ['인기순', '최신순', '거리순', '난이도순'];
+const SORTS = ['인기순', '최신순'];
 
-// BE Mtn → FE 카드 포맷 변환
-// dist·time·lv 는 Track API 데이터라 지금은 '-' 로 표시
+// BE Mtn → FE 카드 포맷 변환 (거리/시간/난이도는 사용하지 않음 → 카드는 고도/위치 표시)
 function toCard(mtn, index) {
   return {
     id:     mtn.id,
@@ -19,10 +16,6 @@ function toCard(mtn, index) {
     name:   mtn.name,
     region: mtn.location ?? '-',
     ele:    mtn.height  ?? 0,
-    dist:   '-',
-    time:   '-',
-    lv:     '-',
-    lvN:    0,
     img:    mtn.imageUrl ?? mtn.storedFilename ?? null, // R2 대표 사진 (없으면 카드가 생성아트로 폴백)
     pal:    PALETTES[index % PALETTES.length],
   };
@@ -37,8 +30,6 @@ export default function MountainListPage() {
   const [keyword, setKeyword] = useState('');
   // 메인 지역 칩에서 넘어온 ?region= 값을 초기값으로 사용
   const [region, setRegion]   = useState(searchParams.get('region') ?? '전체');
-  const [diff, setDiff]       = useState('전체');
-  const [dist, setDist]       = useState('전체');
   const [sort, setSort]       = useState('인기순');
   const [page, setPage]       = useState(1); // 현재 페이지 (1-based)
 
@@ -66,7 +57,6 @@ export default function MountainListPage() {
       if (keyword && !m.name.includes(keyword)) return false;
       if (region !== '전체' && !matchesRegion(m.region, region)) return false;
       return true;
-      // diff·dist 필터는 Track 데이터 연동 후 추가 예정
     });
   }, [mountains, keyword, region]);
 
@@ -94,7 +84,7 @@ export default function MountainListPage() {
       <div className="page-head">
         <div className="eyebrow">ALL MOUNTAINS</div>
         <h1>산 목록</h1>
-        <p className="desc">지역·난이도·거리로 좁혀가며 나에게 맞는 등산 코스를 찾아보세요.</p>
+        <p className="desc">지역으로 좁혀가며 나에게 맞는 산을 찾아보세요.</p>
       </div>
 
       {/* 필터 바 */}
@@ -115,16 +105,6 @@ export default function MountainListPage() {
           <span className={'chip' + (region === '전체' ? ' on' : '')} onClick={() => setRegion('전체')}>전체</span>
           {REGIONS.map((r) => (
             <span key={r.name} className={'chip' + (region === r.name ? ' on' : '')} onClick={() => setRegion(r.name)}>{r.name}</span>
-          ))}
-        </div>
-        <div className="frow">
-          <span className="flab">난이도</span>
-          {DIFFS.map((d) => (
-            <span key={d} className={'chip' + (diff === d ? ' on' : '')} onClick={() => setDiff(d)}>{d}</span>
-          ))}
-          <span className="flab" style={{ marginLeft: 12 }}>거리</span>
-          {DISTS.map((d) => (
-            <span key={d} className={'chip' + (dist === d ? ' on' : '')} onClick={() => setDist(d)}>{d}</span>
           ))}
         </div>
       </div>

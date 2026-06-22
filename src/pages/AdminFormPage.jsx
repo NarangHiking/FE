@@ -2,10 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import AdminLayout from '../components/AdminLayout.jsx';
 import { Field, TextInput, Textarea, Select } from '../components/Form.jsx';
-import { REGIONS } from '../data/mountains.js';
 import { apiFetch } from '../context/AuthContext.jsx';
-
-const REGION_NAMES = REGIONS.map((r) => r.name);
 
 const META = {
   users:     { active: 'users',     label: '유저', list: '/admin/users' },
@@ -138,7 +135,7 @@ function UserForm({ id, isEdit, list }) {
 function MountainForm({ id, isEdit, list }) {
   const navigate = useNavigate();
   const [name,     setName]     = useState('');
-  const [location, setLocation] = useState(REGION_NAMES[0]);
+  const [location, setLocation] = useState('');
   const [height,   setHeight]   = useState('');
   const [description, setDescription] = useState(''); // TEXT NOT NULL
   const [file,     setFile]     = useState(null); // 대표 이미지
@@ -153,7 +150,7 @@ function MountainForm({ id, isEdit, list }) {
       .then(j => {
         const m = j.data ?? j;
         setName(m.name ?? '');
-        setLocation(m.location ?? REGION_NAMES[0]);
+        setLocation(m.location ?? '');
         setHeight(m.height ?? '');
         setDescription(m.description ?? '');
       })
@@ -199,8 +196,8 @@ function MountainForm({ id, isEdit, list }) {
       <Field label="산 이름" required>
         <TextInput value={name} onChange={e => setName(e.target.value)} placeholder="예: 북한산" maxLength={50} />
       </Field>
-      <Field label="지역" required>
-        <Select value={location} options={REGION_NAMES} onChange={e => setLocation(e.target.value)} />
+      <Field label="지역" required hint="예: 서울 강북, 전남 구례">
+        <TextInput value={location} onChange={e => setLocation(e.target.value)} placeholder="예: 서울 강북" maxLength={50} />
       </Field>
       <Field label="최고 고도 (m)" required>
         <TextInput type="number" value={height} onChange={e => setHeight(e.target.value)} placeholder="836" />

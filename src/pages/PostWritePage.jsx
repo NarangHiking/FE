@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { Field, TextInput, Textarea, Select } from '../components/Form.jsx';
+import { Field, TextInput, Textarea } from '../components/Form.jsx';
 import { BASE, apiFetch } from '../context/AuthContext.jsx';
 
 const CONFIG = {
@@ -12,7 +12,6 @@ const CONFIG = {
     back: '/board',
     backLabel: '자유게시판',
     category: 'free',
-    cats: ['후기', '질문', '자유', '정보'],
     placeholder: '제목을 입력하세요 (예: 북한산 백운대 다녀온 후기)',
     bodyPlaceholder: '본문을 작성하세요.',
     tips: [
@@ -29,7 +28,6 @@ const CONFIG = {
     back: '/suggestions',
     backLabel: '건의게시판',
     category: 'feedback',
-    cats: ['산 추가', '경로 수정', '기능 제안', '오류 신고'],
     placeholder: '건의 제목을 입력하세요 (예: 가평 운악산 코스 등록 요청)',
     bodyPlaceholder: '어떤 산/경로가 빠졌는지, 무엇을 개선하면 좋을지 구체적으로 적어주세요.',
     tips: [
@@ -52,7 +50,6 @@ export default function PostWritePage() {
   // ── 폼 상태 ────────────────────────────────────────────────
   const [title, setTitle]     = useState('');
   const [content, setContent] = useState('');
-  const [cat, setCat]         = useState(c.cats[0]);
   const [trackId, setTrackId] = useState('');      // 대상 코스 (건의는 필수)
   const [tracks, setTracks]   = useState([]);       // [{id, label}]
   const [trackQuery, setTrackQuery] = useState(''); // 코스 검색어
@@ -177,10 +174,6 @@ export default function PostWritePage() {
 
           <div className="fc-body">
             <div className="form-grid">
-              <Field label="분류" required>
-                <Select value={cat} options={c.cats} onChange={(e) => setCat(e.target.value)} />
-              </Field>
-
               {kind === 'suggestions' && (
               <Field
                 label="대상 코스"

@@ -3,7 +3,7 @@
    좌: 정보·후기 / 중앙: OSM 지도 + 코스·날씨 카드 / 우: AI 어시스턴트(플로팅)
    ═══════════════════════════════════════════════════════════════ */
 
-.md { position: relative; display: flex; width: min(1480px, calc(100vw - 48px)); margin: 22px auto; height: calc(100vh - 128px); min-height: 520px; overflow: hidden; background: var(--card); border: 2.5px solid var(--ink); border-radius: 18px; box-shadow: 6px 6px 0 var(--ink); z-index: 2; }
+.md { position: relative; display: flex; width: min(1700px, calc(100vw - 48px)); margin: 22px auto; height: calc(100vh - 128px); min-height: 520px; overflow: hidden; background: var(--card); border: 2.5px solid var(--ink); border-radius: 18px; box-shadow: 6px 6px 0 var(--ink); z-index: 2; }
 
 /* ── 좌측 패널 ── */
 .md-left { width: 384px; flex-shrink: 0; height: 100%; overflow-y: auto; border-right: 2.5px solid var(--ink); background: var(--card); }
