@@ -4,6 +4,7 @@ import MountainScene from '../components/MountainScene.jsx';
 import MountainCard from '../components/MountainCard.jsx';
 import { REGIONS, mtnToCard, matchesRegion } from '../data/mountains.js';
 import { apiFetch } from '../context/AuthContext.jsx';
+import { imageUrl } from '../utils/image.js';
 
 const QUICK = ['북한산', '관악산', '지리산', '한라산', '설악산'];
 
@@ -32,6 +33,9 @@ export default function MainPage() {
       .catch(() => {});
   }, []);
   const featured = mtns[0];
+  const featImg = featured ? imageUrl(featured.imageUrl ?? featured.storedFilename) : '';
+  const [featImgOk, setFeatImgOk] = useState(true);
+  useEffect(() => { setFeatImgOk(true); }, [featImg]); // 산 바뀌면 이미지 에러 상태 리셋
 
   // 코스(track) 목록 — 전체/지역별 코스 수 집계용 (GET /api/track)
   const [tracks, setTracks] = useState([]);
@@ -108,7 +112,11 @@ export default function MainPage() {
 
         {featured && (
           <Link className="feature" to={`/mountains/${featured.id}`}>
-            <MountainScene variant={5} palette={mtnToCard(featured).pal} w={1180} h={340} />
+            {featImg && featImgOk ? (
+              <img className="feature-img" src={featImg} alt={featured.name} onError={() => setFeatImgOk(false)} />
+            ) : (
+              <MountainScene variant={5} palette={mtnToCard(featured).pal} w={1180} h={340} />
+            )}
             <div className="ht" />
             <div className="veil" />
             <div className="body">
@@ -133,8 +141,8 @@ export default function MainPage() {
         <div className="sec-head">
           <div className="l">
             <span className="num">02</span>
-            <h2>인기 산 TOP 8</h2>
-            <span className="sub">— 이번 주 가장 많이 검색된</span>
+            <h2>추천 산</h2>
+            <span className="sub">— 지금 가볼 만한 산</span>
           </div>
           <Link className="more" to="/mountains">더 보기 →</Link>
         </div>

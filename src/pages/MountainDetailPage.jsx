@@ -66,7 +66,7 @@ export default function MountainDetailPage() {
   const [likeCount, setLikeCount] = useState(0);
 
   // 화면(디자인) 상태
-  const [aiOpen, setAiOpen] = useState(true);
+  const [aiOpen, setAiOpen] = useState(false); // 처음엔 닫힌 상태(FAB만 표시)
   const [imgOk, setImgOk] = useState(true); // 대표 이미지 로드 성공 여부
 
   // 날씨(시간대별) + 일출/일몰
@@ -75,6 +75,7 @@ export default function MountainDetailPage() {
   const [wxIdx, setWxIdx] = useState(0);
   const [wxErr, setWxErr] = useState(false);
   const [sun, setSun] = useState(null);
+  const [wxDetail, setWxDetail] = useState(false); // 날씨 간단히(기본) ↔ 자세히 보기
 
   // 트랙(코스)별 댓글
   const [comments, setComments] = useState([]);
@@ -421,7 +422,14 @@ export default function MountainDetailPage() {
             </button>
           </div>
 
-          <div className="cc-wx-label">🌤 단기예보 (최대 3일)</div>
+          <div className="cc-wx-label">
+            🌤 단기예보 (최대 3일)
+            {byDay.length > 0 && (
+              <button className="wx-toggle" onClick={() => setWxDetail((v) => !v)}>
+                {wxDetail ? '간단히 보기 ▴' : '자세히 보기 ▾'}
+              </button>
+            )}
+          </div>
           {byDay.length === 0 ? (
             <div className="wx-empty">{wxErr ? '날씨 정보를 불러올 수 없어요' : '날씨 정보를 불러오는 중…'}</div>
           ) : (
@@ -437,16 +445,18 @@ export default function MountainDetailPage() {
                 ))}
               </div>
 
-              {/* 선택한 날의 시간대별 */}
-              <div className="wx-days">
-                {wxSlots.map((w, i) => (
-                  <div key={i} className={'wx-day' + (i === wxIdx ? ' on' : '')} onClick={() => setWxIdx(i)}>
-                    <div className="wd">{fmtHour(w.fcstTime)}</div>
-                    <div className="we">{wxIcon(w)}</div>
-                    <div className="wt">{w.temperature}°</div>
-                  </div>
-                ))}
-              </div>
+              {/* 선택한 날의 시간대별 — 자세히 보기에서만 */}
+              {wxDetail && (
+                <div className="wx-days">
+                  {wxSlots.map((w, i) => (
+                    <div key={i} className={'wx-day' + (i === wxIdx ? ' on' : '')} onClick={() => setWxIdx(i)}>
+                      <div className="wd">{fmtHour(w.fcstTime)}</div>
+                      <div className="we">{wxIcon(w)}</div>
+                      <div className="wt">{w.temperature}°</div>
+                    </div>
+                  ))}
+                </div>
+              )}
 
               <div className="wx-summary">
                 <span className="big">{wxIcon(wxCur)}</span>
@@ -454,11 +464,14 @@ export default function MountainDetailPage() {
                   <b>{wxText(wxCur)} {wxCur?.temperature}°C</b>
                   <span>{wxDay?.max != null ? `최고 ${wxDay.max}° · 최저 ${wxDay.min}°` : ''}</span>
                 </div>
-                <div className="extra">
-                  <span>💧 강수 {wxCur?.precipitationProbability}%</span><span>💦 습도 {wxCur?.humidity}%</span>
-                  <span>🌬 바람 {wxCur?.windSpeed}m/s</span>
-                  <span>🌅 {fmtClock(sun?.sunrise)} · 🌇 {fmtClock(sun?.sunset)}</span>
-                </div>
+                {/* 강수/습도/바람/일출일몰 — 자세히 보기에서만 */}
+                {wxDetail && (
+                  <div className="extra">
+                    <span>💧 강수 {wxCur?.precipitationProbability}%</span><span>💦 습도 {wxCur?.humidity}%</span>
+                    <span>🌬 바람 {wxCur?.windSpeed}m/s</span>
+                    <span>🌅 {fmtClock(sun?.sunrise)} · 🌇 {fmtClock(sun?.sunset)}</span>
+                  </div>
+                )}
               </div>
             </>
           )}
