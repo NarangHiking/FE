@@ -161,7 +161,7 @@ export default function BoardDetailPage() {
         {/* 수정은 작성자만, 삭제는 작성자 또는 관리자 */}
         {(isAuthor || isAdmin) && (
           <div className="post-actions">
-            {isAuthor && <Link className="btn sm" to={`/board/${id}/edit`}>✏ 수정</Link>}
+            {(isAuthor || isAdmin) && <Link className="btn sm" to={`/board/${id}/edit`}>✏ 수정</Link>}
             <button className="btn sm danger" onClick={handleDelete}>🗑 삭제</button>
           </div>
         )}

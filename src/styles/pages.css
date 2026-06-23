@@ -181,8 +181,8 @@
 .board-toolbar .search-mini input { border: none; outline: none; background: transparent; font-family: var(--font-body); font-size: 14px; width: 150px; }
 
 .board-table { border: 2.5px solid var(--ink); border-radius: 14px; overflow: hidden; background: var(--card); box-shadow: 5px 5px 0 var(--ink); }
-.board-table .thead { display: grid; grid-template-columns: 100px 1fr 130px 60px; gap: 12px; padding: 12px 20px; background: var(--paper-2); border-bottom: 2.5px solid var(--ink); font-family: var(--font-mono); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink-soft); }
-.board-row { display: grid; grid-template-columns: 100px 1fr 130px 60px; gap: 12px; padding: 14px 20px; border-bottom: 1.5px dashed var(--line); text-decoration: none; color: inherit; align-items: center; }
+.board-table .thead { display: grid; grid-template-columns: 100px 1fr 180px 60px; gap: 12px; padding: 12px 20px; background: var(--paper-2); border-bottom: 2.5px solid var(--ink); font-family: var(--font-mono); font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--ink-soft); }
+.board-row { display: grid; grid-template-columns: 100px 1fr 180px 60px; gap: 12px; padding: 14px 20px; border-bottom: 1.5px dashed var(--line); text-decoration: none; color: inherit; align-items: center; }
 .board-row:last-child { border-bottom: none; }
 .board-row:hover { background: var(--paper-2); }
 .board-row .b-tag { font-family: var(--font-mono); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; border: 1.5px solid var(--ink); border-radius: 5px; padding: 2px 7px; text-align: center; white-space: nowrap; }

@@ -54,6 +54,8 @@ export default function PostWritePage() {
   const [tracks, setTracks]   = useState([]);       // [{id, label}]
   const [trackQuery, setTrackQuery] = useState(''); // 코스 검색어
   const [files, setFiles]     = useState([]);
+  const [existingImages, setExistingImages] = useState([]);
+  const [deletedImages, setDeletedImages]   = useState([]);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError]     = useState('');
   const fileRef = useRef(null);
@@ -87,6 +89,9 @@ export default function PostWritePage() {
         setTitle(post.title   ?? '');
         setContent(post.content ?? '');
         setTrackId(post.trackId != null ? String(post.trackId) : '');
+        const urls = post.imageUrls ?? [];
+        const names = post.images ?? [];
+        setExistingImages(urls.map((url, i) => ({ url, storedName: names[i] ?? url })));
       })
       .catch((err) => setError(err.message));
   }, [id, isEdit]);
@@ -94,12 +99,18 @@ export default function PostWritePage() {
   // ── 파일 처리 ─────────────────────────────────────────────
   function handleFiles(e) {
     const selected = Array.from(e.target.files ?? []);
+    const maxNew = 3 - existingImages.length;
     const merged = [...files, ...selected];
-    if (merged.length > 3) alert('사진은 최대 3장까지 첨부할 수 있어요.');
-    setFiles(merged.slice(0, 3));
+    if (merged.length > maxNew) alert('사진은 최대 3장까지 첨부할 수 있어요.');
+    setFiles(merged.slice(0, Math.max(0, maxNew)));
   }
   function removeFile(idx) {
     setFiles((prev) => prev.filter((_, i) => i !== idx));
+  }
+  function removeExisting(idx) {
+    const img = existingImages[idx];
+    setDeletedImages((prev) => [...prev, img.storedName]);
+    setExistingImages((prev) => prev.filter((_, i) => i !== idx));
   }
 
   // ── 제출 ─────────────────────────────────────────────────
@@ -124,6 +135,7 @@ export default function PostWritePage() {
       fd.append('board', new Blob([JSON.stringify(board)], { type: 'application/json' }));
       const fileField = isEdit ? 'addedImages' : 'images';
       files.forEach((f) => fd.append(fileField, f));
+      if (isEdit) deletedImages.forEach((name) => fd.append('deletedImages', name));
 
       const url    = isEdit ? `${BASE}/api/board/${id}` : `${BASE}/api/board`;
       const method = isEdit ? 'PUT' : 'POST';
@@ -248,12 +260,19 @@ export default function PostWritePage() {
                   <div className="dz-t">사진을 끌어다 놓거나 클릭하여 업로드</div>
                   <div className="dz-s">최대 3장</div>
                 </div>
-                {files.length > 0 && (
-                  <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {(existingImages.length > 0 || files.length > 0) && (
+                  <div style={{ marginTop: 10, display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                    {existingImages.map((img, i) => (
+                      <div key={'ex-' + i} style={{ position: 'relative', width: 96, height: 96, borderRadius: 10, border: '2px solid var(--ink)', overflow: 'hidden', boxShadow: '2px 2px 0 var(--ink)' }}>
+                        <img src={img.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                        <button type="button" onClick={() => removeExisting(i)}
+                          style={{ position: 'absolute', top: 4, right: 4, width: 22, height: 22, borderRadius: '50%', border: '1.5px solid #fff', background: 'rgba(0,0,0,0.55)', color: '#fff', cursor: 'pointer', fontSize: 12, display: 'grid', placeItems: 'center', lineHeight: 1 }}>✕</button>
+                      </div>
+                    ))}
                     {files.map((f, i) => (
-                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 8px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 4, fontSize: 13 }}>
-                        <span>{f.name}</span>
-                        <button type="button" onClick={() => removeFile(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--pop)' }}>✕</button>
+                      <div key={'new-' + i} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 8px', background: 'var(--sky)', border: '1.5px solid var(--ink)', borderRadius: 8, fontSize: 13 }}>
+                        <span>📎 {f.name}</span>
+                        <button type="button" onClick={() => removeFile(i)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--pop)', fontWeight: 700 }}>✕</button>
                       </div>
                     ))}
                   </div>
