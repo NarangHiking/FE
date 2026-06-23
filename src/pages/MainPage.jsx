@@ -128,7 +128,10 @@ export default function MainPage() {
               <div className="region">📍 {featured.location} · 고도 {featured.height}m</div>
               <div className="specs">
                 <div className="s"><div className="k">고도</div><div className="v">{featured.height}m</div></div>
-                <div className="s"><div className="k">위치</div><div className="v">{featured.location}</div></div>
+                <div className="s">
+                  <div className="k">위치</div>
+                  <div className="v" style={{ fontFamily: 'var(--font-body)', fontWeight: 700, fontSize: 15, lineHeight: 1.35 }}>{featured.location}</div>
+                </div>
               </div>
               <span className="btn pop cta">코스 상세 보기 →</span>
             </div>

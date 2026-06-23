@@ -193,7 +193,7 @@ header {
 .card .fav.on { background: var(--pop); color: #fff; }
 .card .info { padding: 13px 15px 15px; display: flex; flex-direction: column; gap: 9px; flex: 1; }
 .card .info .top { display: flex; align-items: baseline; justify-content: space-between; gap: 6px; }
-.card .info h3 { font-family: var(--font-disp); font-weight: 400; font-size: 23px; letter-spacing: -0.5px; line-height: 1; white-space: nowrap; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.card .info h3 { font-family: var(--font-disp); font-weight: 400; font-size: 23px; letter-spacing: -0.5px; line-height: 1; white-space: nowrap; flex-shrink: 0; }
 .card .info .reg { font-family: var(--font-mono); font-size: 11px; color: var(--ink-soft); white-space: nowrap; flex-shrink: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; text-align: right; }
 .card .meta { display: flex; gap: 0; border-top: 1.5px dashed var(--line); padding-top: 9px; margin-top: auto; }
 .card .meta .m { flex: 1; text-align: center; border-right: 1.5px dashed var(--line); }
