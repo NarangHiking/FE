@@ -17,7 +17,7 @@ const CONFIG = {
     tips: [
       '후기는 코스명·날짜·난이도를 함께 적어주면 좋아요.',
       '욕설/광고/도배 글은 통보 없이 삭제될 수 있어요.',
-      '사진은 최대 10장까지 첨부할 수 있어요.',
+      '사진은 최대 3장까지 첨부할 수 있어요.',
     ],
   },
   suggestions: {
@@ -94,7 +94,9 @@ export default function PostWritePage() {
   // ── 파일 처리 ─────────────────────────────────────────────
   function handleFiles(e) {
     const selected = Array.from(e.target.files ?? []);
-    setFiles((prev) => [...prev, ...selected].slice(0, 10));
+    const merged = [...files, ...selected];
+    if (merged.length > 3) alert('사진은 최대 3장까지 첨부할 수 있어요.');
+    setFiles(merged.slice(0, 3));
   }
   function removeFile(idx) {
     setFiles((prev) => prev.filter((_, i) => i !== idx));
@@ -120,7 +122,8 @@ export default function PostWritePage() {
       if (trackId) board.trackId = Number(trackId); // 자유글은 선택, 건의는 필수
       const fd = new FormData();
       fd.append('board', new Blob([JSON.stringify(board)], { type: 'application/json' }));
-      files.forEach((f) => fd.append('addedImages', f));
+      const fileField = isEdit ? 'addedImages' : 'images';
+      files.forEach((f) => fd.append(fileField, f));
 
       const url    = isEdit ? `${BASE}/api/board/${id}` : `${BASE}/api/board`;
       const method = isEdit ? 'PUT' : 'POST';
@@ -231,7 +234,7 @@ export default function PostWritePage() {
                 />
               </Field>
 
-              <Field label="사진 첨부" full hint="JPG / PNG / GIF · 장당 10MB 이하 · 최대 10장">
+              <Field label="사진 첨부" full hint="JPG / PNG / GIF · 장당 10MB 이하 · 최대 3장">
                 <input
                   ref={fileRef}
                   type="file"
@@ -243,7 +246,7 @@ export default function PostWritePage() {
                 <div className="dropzone" onClick={() => fileRef.current?.click()} style={{ cursor: 'pointer' }}>
                   <div className="dz-ic">🏞</div>
                   <div className="dz-t">사진을 끌어다 놓거나 클릭하여 업로드</div>
-                  <div className="dz-s">최대 10장</div>
+                  <div className="dz-s">최대 3장</div>
                 </div>
                 {files.length > 0 && (
                   <div style={{ marginTop: 8, display: 'flex', flexWrap: 'wrap', gap: 8 }}>

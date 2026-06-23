@@ -19,18 +19,25 @@ export const BASE = import.meta.env.VITE_API_URL ?? '';
 // 401 응답 시 전역 logout 이벤트 발행 → AuthProvider가 감지해서 state 초기화
 // ─────────────────────────────────────────────
 export function apiFetch(path, options = {}) {
-  // FormData(멀티파트)일 땐 Content-Type 을 브라우저가 boundary 포함해 직접 설정해야 하므로 지정하지 않는다.
   const isForm = options.body instanceof FormData;
-  return fetch(`${BASE}${path}`, {
+  const doFetch = () => fetch(`${BASE}${path}`, {
     ...options,
     credentials: 'include',
     headers: {
       ...(isForm ? {} : { 'Content-Type': 'application/json' }),
       ...options.headers,
     },
-  }).then((res) => {
-    if (res.status === 401) {
-      // 쿠키가 만료/삭제됐는데 FE state가 로그인 상태인 경우 동기화
+  });
+
+  return doFetch().then(async (res) => {
+    if (res.status === 401 && !options._retried && !path.startsWith('/api/auth/')) {
+      const reissue = await fetch(`${BASE}/api/auth/reissue`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      if (reissue.ok) {
+        return apiFetch(path, { ...options, _retried: true });
+      }
       window.dispatchEvent(new Event('auth:logout'));
     }
     return res;

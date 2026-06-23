@@ -2,7 +2,6 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import MountainScene from '../components/MountainScene.jsx';
 import TrailLeafletMap from '../components/TrailLeafletMap.jsx';
-import { MOUNTAINS } from '../data/mountains.js';
 import { apiFetch, useAuth } from '../context/AuthContext.jsx';
 import { imageUrl } from '../utils/image.js';
 
@@ -306,9 +305,8 @@ export default function MountainDetailPage() {
 
   // ── 지도 좌표 ──
   // TODO(BE): Mtn DTO 에 lat/lng 추가 권장. 현재는 더미 좌표표에서 이름으로 매칭, 없으면 북한산.
-  const coord = MOUNTAINS.find((x) => x.name === mtn.name);
-  const lat = mtn.lat ?? coord?.lat ?? 37.6586;
-  const lng = mtn.lng ?? coord?.lng ?? 126.9779;
+  const lat = mtn.lat ?? 37.6586;
+  const lng = mtn.lng ?? 126.9779;
 
   // ── AI 어시스턴트 (RAG 챗봇, POST /api/chat 연동) ──
   // 첫 인사말은 산 정보 기반 정적 메시지, 이후 대화는 chatMsgs(state)로 누적
@@ -389,8 +387,8 @@ export default function MountainDetailPage() {
                   <input ref={fileRef} type="file" accept="image/*" multiple hidden
                     onChange={(e) => {
                       const picked = Array.from(e.target.files);
-                      if (picked.length > 5) alert('사진은 최대 5장까지 첨부할 수 있어요.');
-                      setCmtFiles(picked.slice(0, 5));
+                      if (picked.length > 3) alert('사진은 최대 3장까지 첨부할 수 있어요.');
+                      setCmtFiles(picked.slice(0, 3));
                     }} />
                 </label>
                 <button className="btn pop sm" type="submit" disabled={cmtBusy || !route}>
@@ -413,7 +411,7 @@ export default function MountainDetailPage() {
                   <div className="rav">{(c.name ?? '?').slice(0, 1)}</div>
                   <div className="rwho">{c.name}</div>
                   <div className="rdate">{c.createdAt}</div>
-                  {user && user.name === c.name && (
+                  {user && (user.name === c.name || user.role === 'ADMIN' || user.role === 'admin') && (
                     <button className="cmt-del" onClick={() => deleteComment(c.id)}>삭제</button>
                   )}
                 </div>
