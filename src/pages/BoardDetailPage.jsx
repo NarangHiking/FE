@@ -149,7 +149,7 @@ export default function BoardDetailPage() {
         {/* 첨부 이미지 (BoardDetailResponse.imageUrls: 전체 URL 배열) */}
         {(post.imageUrls ?? (post.image ? [post.image] : [])).map((u, i) => (
           <div className="post-image" key={i}>
-            <img src={u} alt={`첨부 이미지 ${i + 1}`} style={{ maxWidth: '100%' }} />
+            <img src={u} alt={`첨부 이미지 ${i + 1}`} />
           </div>
         ))}
 

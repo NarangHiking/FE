@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { apiFetch } from '../context/AuthContext.jsx';
+import { apiFetch, useAuth } from '../context/AuthContext.jsx';
 
 const PAGE_SIZE = 15; // 한 페이지에 표시할 게시글 수
 
@@ -12,6 +12,7 @@ export default function FreeBoardPage() {
   const [page, setPage]       = useState(1); // 현재 페이지 (1-based)
 
   const [input, setInput] = useState('');
+  const { user } = useAuth();
 
   useEffect(() => {
     setLoading(true);
@@ -81,7 +82,7 @@ export default function FreeBoardPage() {
                 onKeyDown={(e) => e.key === 'Enter' && search()}
               />
             </div>
-            <Link className="btn pop sm" to="/board/write">✏ 글쓰기</Link>
+            <Link className="btn pop sm" to={user ? '/board/write' : '/login'}>✏ 글쓰기</Link>
           </div>
         </div>
 

@@ -118,10 +118,10 @@ export default function MountainDetailPage() {
   //   GET /api/weather?mtnName=&fcstDate=(오늘)  → [WeatherResponse...]
   //   GET /api/sun?locdate=&location=            → response.body.items.item {sunrise,sunset}
   useEffect(() => {
-    if (!mtn?.name) return;
+    if (!mtn?.name || !mtn.lat || !mtn.lng) return;
     const ymd = todayYmd();
     setWxErr(false);
-    apiFetch(`/api/weather?mtnName=${encodeURIComponent(mtn.name)}`)
+    apiFetch(`/api/weather?lat=${mtn.lat}&lng=${mtn.lng}`)
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((j) => { setWeather(j.data ?? j); setDayIdx(0); setWxIdx(0); })
       .catch(() => setWxErr(true));
@@ -246,7 +246,13 @@ export default function MountainDetailPage() {
     setChatInput('');
     setChatBusy(true);
     try {
-      const res = await apiFetch('/api/chat', { method: 'POST', body: JSON.stringify({ message: msg }) });
+      const res = await apiFetch('/api/chat', { 
+          method: 'POST', 
+          body: JSON.stringify({ 
+              mountainId: Number(id), // 💡 URL 파라미터인 id를 숫자로 변환해서 함께 전송!
+              message: msg 
+          }) 
+      });
       if (!res.ok) throw new Error();
       const json = await res.json();
       const answer = json.data ?? json.message ?? '답변을 가져오지 못했어요.';

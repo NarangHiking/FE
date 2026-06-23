@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { apiFetch } from '../context/AuthContext.jsx';
+import { apiFetch, useAuth } from '../context/AuthContext.jsx';
 
 const PAGE_SIZE = 15;
 
@@ -10,6 +10,7 @@ export default function SuggestionBoardPage() {
   const [error, setError]     = useState('');
   const [keyword, setKeyword] = useState('');
   const [input, setInput]     = useState('');
+  const { user } = useAuth();
   const [page, setPage]       = useState(1);
 
   useEffect(() => {
@@ -66,7 +67,7 @@ export default function SuggestionBoardPage() {
           <h3>이런 코스가 빠졌어요!</h3>
           <p>등록되지 않은 산이나 잘못된 경로 정보를 알려주시면 빠르게 반영하겠습니다.</p>
         </div>
-        <Link className="btn pop" to="/suggestions/write">건의하러 가기 →</Link>
+        <Link className="btn pop" to={user ? '/suggestions/write' : '/login'}>건의하러 가기 →</Link>
       </div>
 
       <div className="board-shell">
