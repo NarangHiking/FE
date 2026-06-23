@@ -64,6 +64,7 @@ export default function MountainDetailPage() {
   const [fav, setFav] = useState(false);
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
+  const [trackKm, setTrackKm] = useState(null); // GPX로 계산한 트랙 거리(km)
 
   // 화면(디자인) 상태
   const [aiOpen, setAiOpen] = useState(false); // 처음엔 닫힌 상태(FAB만 표시)
@@ -144,6 +145,7 @@ export default function MountainDetailPage() {
   useEffect(() => {
     const trackId = routes[tab]?.id;
     setLikeCount(routes[tab]?.recommendCnt ?? 0);
+    setTrackKm(null); // 코스 바뀌면 거리 초기화 (새 GPX 로드 후 다시 채워짐)
     if (!user || !trackId) {
       setLiked(false);
       setFav(false);
@@ -434,7 +436,7 @@ export default function MountainDetailPage() {
       {/* ───── 중앙: 지도 + 코스/날씨 카드 ───── */}
       <div className="md-map">
         {/* 코스 바뀌면 key로 지도 리마운트 → GPX 다시 로드/맞춤 */}
-        <TrailLeafletMap key={route?.id ?? 'none'} center={[lat, lng]} gpxUrl={gpxHref} />
+        <TrailLeafletMap key={route?.id ?? 'none'} center={[lat, lng]} gpxUrl={gpxHref} onStats={setTrackKm} />
 
         {/* 코스 + 날씨 플로팅 카드 */}
         <div className="md-course-card">
@@ -455,6 +457,12 @@ export default function MountainDetailPage() {
           <div className="cc-meta">
             <span className="k">최고 고도</span>
             <span className="ele">{mtn.height}m</span>
+            {trackKm != null && (
+              <>
+                <span className="k">거리</span>
+                <span className="ele">{trackKm.toFixed(1)}km</span>
+              </>
+            )}
             {/* ♥ 추천(좋아요): GET/POST/DELETE /api/recommend/{trackId} */}
             <button
               className="like"

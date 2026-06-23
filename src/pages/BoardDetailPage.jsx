@@ -112,6 +112,7 @@ export default function BoardDetailPage() {
   if (!post)   return null;
 
   const isAuthor = user && user.name === post.name; // 작성자 본인 여부
+  const isAdmin = user?.role === 'ADMIN' || user?.role === 'admin'; // 관리자: 남의 글/댓글도 삭제 가능
   const backPath = post.category === 'feedback' ? '/suggestions' : '/board';
   // 댓글은 오래된 순(작성 시각 오름차순, 동일 시 id 오름차순)으로 표시
   const comments = [...(post.comments ?? [])].sort(
@@ -157,10 +158,10 @@ export default function BoardDetailPage() {
           {post.content ?? '(내용 없음)'}
         </div>
 
-        {/* 작성자만 수정/삭제 버튼 노출 */}
-        {isAuthor && (
+        {/* 수정은 작성자만, 삭제는 작성자 또는 관리자 */}
+        {(isAuthor || isAdmin) && (
           <div className="post-actions">
-            <Link className="btn sm" to={`/board/${id}/edit`}>✏ 수정</Link>
+            {isAuthor && <Link className="btn sm" to={`/board/${id}/edit`}>✏ 수정</Link>}
             <button className="btn sm danger" onClick={handleDelete}>🗑 삭제</button>
           </div>
         )}
@@ -178,11 +179,13 @@ export default function BoardDetailPage() {
               <div className="comment-top">
                 <span className="comment-author">{c.name}</span>
                 <span className="comment-date">{c.createdAt}</span>
-                {/* 내 댓글만 수정/삭제 버튼 */}
-                {user && user.name === c.name && editingId !== c.id && (
+                {/* 수정은 작성자 본인, 삭제는 작성자 또는 관리자 */}
+                {user && (user.name === c.name || isAdmin) && editingId !== c.id && (
                   <span style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
-                    <button className="comment-delete" style={{ marginLeft: 0 }}
-                      onClick={() => { setEditingId(c.id); setEditText(c.content); }}>수정</button>
+                    {user.name === c.name && (
+                      <button className="comment-delete" style={{ marginLeft: 0 }}
+                        onClick={() => { setEditingId(c.id); setEditText(c.content); }}>수정</button>
+                    )}
                     <button className="comment-delete" style={{ marginLeft: 0 }}
                       onClick={() => handleCommentDelete(c.id)}>삭제</button>
                   </span>

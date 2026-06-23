@@ -19,6 +19,7 @@ import PostWritePage from './pages/PostWritePage.jsx';
 import SearchResultsPage from './pages/SearchResultsPage.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import SignupPage from './pages/SignupPage.jsx';
+import ResetPasswordPage from './pages/ResetPasswordPage.jsx';
 import GpxGuidePage from './pages/GpxGuidePage.jsx';
 import ProfileEditPage from './pages/ProfileEditPage.jsx';
 
@@ -28,7 +29,7 @@ export default function App() {
   const { initializing, user } = useAuth();
   const isAdminPath = pathname.startsWith('/admin');
   const isAdminUser = user?.role === 'ADMIN' || user?.role === 'admin';
-  const isAuth = pathname === '/login' || pathname === '/signup';
+  const isAuth = pathname === '/login' || pathname === '/signup' || pathname === '/reset-password';
   // 산 상세는 지도 풀스크린 레이아웃이라 푸터를 숨긴다
   const isDetail = /^\/mountains\/[^/]+$/.test(pathname);
 
@@ -63,6 +64,7 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
       </Routes>
     );
   }

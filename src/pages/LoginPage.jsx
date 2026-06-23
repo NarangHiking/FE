@@ -81,7 +81,7 @@ export default function LoginPage() {
 
             <div className="auth-row">
               <label className="check"><input type="checkbox" defaultChecked /> 로그인 상태 유지</label>
-              <Link to="/login">비밀번호를 잊으셨나요?</Link>
+              <Link to="/reset-password">비밀번호를 잊으셨나요?</Link>
             </div>
 
             {/* disabled + 텍스트 변경으로 중복 제출 방지 */}

@@ -25,7 +25,6 @@ export default function MountainCard({ m, sceneVariant, showRank = true }) {
         </div>
         <div className="meta">
           <div className="m"><div className="k">고도</div><div className="v">{m.ele}m</div></div>
-          <div className="m"><div className="k">위치</div><div className="v" style={{ fontSize: 13 }}>{m.region}</div></div>
         </div>
       </div>
     </Link>

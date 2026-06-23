@@ -21,6 +21,23 @@ const PEAK = pin('#e7642e', '⛰');
 const toLatLng = (p) => [parseFloat(p.getAttribute('lat')), parseFloat(p.getAttribute('lon'))];
 const valid = ([a, b]) => Number.isFinite(a) && Number.isFinite(b);
 
+// 두 [lat,lng] 사이 거리(m) — 하버사인
+function haversine([la1, lo1], [la2, lo2]) {
+  const R = 6371000, rad = (d) => (d * Math.PI) / 180;
+  const dLa = rad(la2 - la1), dLo = rad(lo2 - lo1);
+  const a = Math.sin(dLa / 2) ** 2 + Math.cos(rad(la1)) * Math.cos(rad(la2)) * Math.sin(dLo / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(a));
+}
+// 세그먼트별로 점 사이 거리를 합산 → km (세그먼트 경계는 잇지 않음)
+function totalKm(segments) {
+  const m = segments.reduce((sum, seg) => {
+    let d = 0;
+    for (let i = 1; i < seg.length; i++) d += haversine(seg[i - 1], seg[i]);
+    return sum + d;
+  }, 0);
+  return m / 1000;
+}
+
 // GPX → 세그먼트 배열 (각 세그먼트는 [lat,lng][])
 function parseGpx(text) {
   const xml = new DOMParser().parseFromString(text, 'application/xml');
@@ -50,7 +67,7 @@ function FitBounds({ points, center }) {
   return null;
 }
 
-export default function TrailLeafletMap({ center, gpxUrl }) {
+export default function TrailLeafletMap({ center, gpxUrl, onStats }) {
   const [segments, setSegments] = useState([]);
 
   useEffect(() => {
@@ -63,6 +80,15 @@ export default function TrailLeafletMap({ center, gpxUrl }) {
       .catch(() => {}); // CORS/404 → 트랙 없이 마커만
     return () => { off = true; };
   }, [gpxUrl]);
+
+  // 세그먼트가 준비되면 트랙 거리(km)를 부모에 전달 (없으면 null)
+  useEffect(() => {
+    if (!onStats) return;
+    const km = segments.length ? totalKm(segments) : 0;
+    onStats(km > 0 ? km : null);
+    // onStats(콜백)은 매 렌더 새로 만들어질 수 있어 의존성에서 제외
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [segments]);
 
   const all = segments.flat();
   const hasTrack = all.length > 1;
