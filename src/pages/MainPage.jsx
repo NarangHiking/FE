@@ -24,12 +24,21 @@ export default function MainPage() {
       .catch(() => {});
   }, []);
 
-  // 산 목록 — GET /api/mtn/list (이달의 산 = 첫 항목, 인기 산 = 앞 8개)
+  // 산 목록 — GET /api/mtn/list (이달의 산 = 첫 항목)
   const [mtns, setMtns] = useState([]);
   useEffect(() => {
     apiFetch('/api/mtn/list')
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => { if (json) setMtns(json.data ?? json); })
+      .catch(() => {});
+  }, []);
+
+  // 추천 산 TOP 8 — GET /api/mtn/top?limit=8 (코스 하트 수 기준)
+  const [topMtns, setTopMtns] = useState([]);
+  useEffect(() => {
+    apiFetch('/api/mtn/top?limit=8')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => { if (json) setTopMtns(json.data ?? json); })
       .catch(() => {});
   }, []);
   const featured = mtns[0];
@@ -150,7 +159,7 @@ export default function MainPage() {
           <Link className="more" to="/mountains">더 보기 →</Link>
         </div>
         <div className="grid">
-          {mtns.slice(0, 8).map((m, i) => (
+          {topMtns.map((m, i) => (
             <MountainCard key={m.id} m={{ ...mtnToCard(m), rank: i + 1 }} sceneVariant={i + 11} />
           ))}
         </div>

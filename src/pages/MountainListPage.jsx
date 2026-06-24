@@ -29,24 +29,26 @@ export default function MountainListPage() {
   const [keyword, setKeyword] = useState('');
   // 메인 지역 칩에서 넘어온 ?region= 값을 초기값으로 사용
   const [region, setRegion]   = useState(searchParams.get('region') ?? '전체');
+  const [sort, setSort]       = useState('name'); // 'name' | 'recommend'
   const [page, setPage]       = useState(1); // 현재 페이지 (1-based)
 
   // ── API 호출 ──────────────────────────────────────────────
-  // useEffect: 컴포넌트가 처음 마운트될 때 한 번 실행
+  // sort 변경 시마다 재호출: 이름순 → /api/mtn/list, 추천순 → /api/mtn/top
   useEffect(() => {
-    apiFetch('/api/mtn/list')
+    setLoading(true);
+    const url = sort === 'recommend' ? '/api/mtn/top' : '/api/mtn/list';
+    apiFetch(url)
       .then((res) => {
         if (!res.ok) throw new Error('산 목록을 불러오지 못했습니다.');
         return res.json();
       })
       .then((json) => {
-        // ApiResult 래퍼: { success, data: [...] } 또는 그냥 배열
         const list = json.data ?? json;
         setMountains(list.map(toCard));
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, []); // [] = 의존성 없음 → 마운트 1회만 실행
+  }, [sort]);
 
   // ── 클라이언트 필터링 ─────────────────────────────────────
   // useMemo: mountains·필터 state가 바뀔 때만 재계산 (불필요한 연산 방지)
@@ -61,7 +63,7 @@ export default function MountainListPage() {
   // ── 페이지네이션 계산 ─────────────────────────────────────
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   // 필터/검색이 바뀌어 현재 페이지가 범위를 벗어나면 1페이지로 보정
-  useEffect(() => { setPage(1); }, [keyword, region]);
+  useEffect(() => { setPage(1); }, [keyword, region, sort]);
   const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   // 현재 페이지 기준 앞뒤 2개씩, 최대 5개의 페이지 번호
@@ -97,6 +99,11 @@ export default function MountainListPage() {
               onChange={(e) => setKeyword(e.target.value)}
             />
           </div>
+        </div>
+        <div className="frow">
+          <span className="flab">정렬</span>
+          <span className={'chip' + (sort === 'name' ? ' on' : '')} onClick={() => setSort('name')}>이름순</span>
+          <span className={'chip' + (sort === 'recommend' ? ' on' : '')} onClick={() => setSort('recommend')}>추천순</span>
         </div>
         <div className="frow">
           <span className="flab">지역</span>
